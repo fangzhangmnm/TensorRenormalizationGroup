@@ -12,7 +12,8 @@ import numpy as np
 from opt_einsum import contract
 import itertools as itt
 from dataclasses import dataclass
-
+def _toN(t):
+    return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 from safe_svd import svd,sqrt # TODO is it necessary???
 
 # Basic idea:
@@ -39,15 +40,17 @@ def Split_Matrix(Q):
 @dataclass
 class GILT_options:
     enabled:bool=True
-    eps:float=1e-6
-    nIter:int=2
+    eps:float=8e-7              #too los like 1e-8 will result false fixed topological point
+    nIter:int=1                 #enough
     split_insertion:bool=True
-    TRG_method:str='BA'
+    TRG_method:str='A'
+    HOTRG_3D_method:str='square_only'
     fix_gauge:bool=True
-    cube_apply_inner:bool=True
+    record_S:bool=False
+
+recorded_S=[]
     
 def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
-    
     d=EEh.shape[0]
     uu,vvh=torch.eye(d),torch.eye(d)
     for _iter in range(options.nIter):
@@ -59,6 +62,8 @@ def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
         U=U.reshape(d,d,d**2)
         t=contract('aac->c',U)
         Sn=S/torch.max(S)
+        if options.record_S:
+            recorded_S.append(_toN(Sn))
         t=t*(Sn**2/(Sn**2+options.eps**2))
         Q=contract('abc,c->ab',U,t)
         if options.split_insertion:
@@ -202,6 +207,15 @@ def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     #Y2=contract('ijkl,Kk,Ll->ijKL',Y2,*gg[1])
     #print((T1-Y1).norm(),(T2-Y2).norm())
     return T1,T2,gg
+
+
+def GILT_HOTRG3D_square_only(T1,T2,options:GILT_options=GILT_options()):
+    #       g4|                         5--6
+    #    /g1-T1-g2\      50      34     |1--2
+    #  -w   g8|g3  w-    2T3  -> 0T'1   7| 8|
+    #    \g5-T2-g6/       14      52     3--4
+    #         |g7 
+    pass
     
 def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     #       g4|                         5--6
@@ -216,12 +230,14 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     T12s=[T1,T1,T1,T1,T2,T2,T2,T2]
     contract23='ijklmn,Kk,Ll->ijKLmn'
     contract45='ijklmn,Mm,Nn->ijklMN'
+
+    cube_apply_inner=True
     
     u,vh=GILT_Cube_one(T21s,leg='34',options=options)
     T1,g1,g2=contract(contract23,T1,vh,u.T),vh,u.T
     u,vh=GILT_Cube_one(T21s,leg='78',options=options)
     T1,g1,g2=contract(contract23,T1,vh,u.T),vh@g1,u.T@g2
-    if options.cube_apply_inner:
+    if cube_apply_inner:
         u,vh=GILT_Cube_one(T12s,leg='12',options=options)
         T1,g1,g2=contract(contract23,T1,vh,u.T),vh@g1,u.T@g2
         u,vh=GILT_Cube_one(T12s,leg='56',options=options)
@@ -231,7 +247,7 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     T1,g3,g4=contract(contract45,T1,vh,u.T),vh,u.T
     u,vh=GILT_Cube_one(T21s,leg='48',options=options)
     T1,g3,g4=contract(contract45,T1,vh,u.T),vh@g3,u.T@g4
-    if options.cube_apply_inner:
+    if cube_apply_inner:
         u,vh=GILT_Cube_one(T12s,leg='15',options=options)
         T1,g3,g4=contract(contract45,T1,vh,u.T),vh@g3,u.T@g4
         u,vh=GILT_Cube_one(T12s,leg='26',options=options)
@@ -241,7 +257,7 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     T2,g5,g6=contract(contract23,T2,vh,u.T),vh,u.T
     u,vh=GILT_Cube_one(T21s,leg='56',options=options)
     T2,g5,g6=contract(contract23,T2,vh,u.T),vh@g5,u.T@g6
-    if options.cube_apply_inner:
+    if cube_apply_inner:
         u,vh=GILT_Cube_one(T12s,leg='34',options=options)
         T2,g5,g6=contract(contract23,T2,vh,u.T),vh@g5,u.T@g6
         u,vh=GILT_Cube_one(T12s,leg='78',options=options)
@@ -251,7 +267,7 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     T2,g7,g8=contract(contract45,T2,vh,u.T),vh,u.T
     u,vh=GILT_Cube_one(T21s,leg='26',options=options)
     T2,g7,g8=contract(contract45,T2,vh,u.T),vh@g7,u.T@g8
-    if options.cube_apply_inner:
+    if cube_apply_inner:
         u,vh=GILT_Cube_one(T12s,leg='37',options=options)
         T2,g7,g8=contract(contract45,T2,vh,u.T),vh@g7,u.T@g8
         u,vh=GILT_Cube_one(T12s,leg='48',options=options)
@@ -274,6 +290,13 @@ def GILT_HOTRG_layer(T1,T2,max_dim,dimR=None,options:GILT_options=GILT_options()
         T1,T2,gg=_GILT_HOTRG(T1,T2,options=options)
         Tn,layer=HOTRG_layer(T1,T2,max_dim=max_dim,dimR=dimR)
         layer.gg=gg
+
+        if options.record_S:
+            import matplotlib.pyplot as plt
+            plt.hist(recorded_S[0],bins=np.logspace(-9,0,50),log=True)
+            plt.xscale('log')
+            plt.show()
+            recorded_S.clear()
         return Tn,layer
     else:
         return HOTRG_layer(T1,T2,max_dim=max_dim,dimR=dimR)
@@ -285,8 +308,6 @@ def GILT_HOTRG_layer(T1,T2,max_dim,dimR=None,options:GILT_options=GILT_options()
 from TRG import TRG_AB
 from HOTRGZ2 import gauge_invariant_norm
 
-import inspect
-
 
 def GILT_SquareA(A,options:GILT_options=GILT_options()):
     # Not good precision. Why?
@@ -294,7 +315,7 @@ def GILT_SquareA(A,options:GILT_options=GILT_options()):
     # | O |  -->  | O |
     # A---A      vAu-vAu
     for i in range(4):
-        u,vh=GILT_Square_one([A,A,A,A],leg='12')
+        u,vh=GILT_Square_one([A,A,A,A],leg='12',options=options)
         A=contract('abcd,Cc,dD->abCD',A,vh,u)
         A=contract('abcd->dcab',A)
     return A
@@ -305,7 +326,7 @@ def GILT_SquareABCD(A,B,C,D,options:GILT_options=GILT_options()):
     # C---D       C---D     1
     for i in range(2):
         for i in range(4):
-            u,vh=GILT_Square_one([A,B,C,D],leg='12')
+            u,vh=GILT_Square_one([A,B,C,D],leg='12',options=options)
             A,B=contract('abcd,dD->abcD',A,u),contract('abcd,Cc->abCd',B,vh)
             CCW='abcd->dcab'
             A,B,C,D=contract(CCW,B),contract(CCW,D),contract(CCW,A),contract(CCW,C)#rotate CCW
@@ -317,7 +338,7 @@ def GILT_SquareAB(A,B,options:GILT_options=GILT_options()):
     # | O |  -->  | O |    2A3
     # B---A      vB---Au    1
     for i in range(4):
-        u,vh=GILT_Square_one([A,B,B,A],leg='12')
+        u,vh=GILT_Square_one([A,B,B,A],leg='12',options=options)
         A,B=contract('abcd,dD->abcD',A,u),contract('abcd,Cc->abCd',B,vh)
         A,B=contract('abcd->dcab',B),contract('abcd->dcab',A)#rotate 
     return A,B

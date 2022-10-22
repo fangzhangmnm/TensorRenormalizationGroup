@@ -2,10 +2,12 @@ import torch
 from tqdm.auto import tqdm as tqdm
 from opt_einsum import contract
 import torch.utils.checkpoint
-import itertools
+import itertools as itt
+import functools
 from collections import namedtuple
 from dataclasses import dataclass
 import math
+import numpy as np
 def _toN(t):
     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 
@@ -41,7 +43,7 @@ def RepMat(dimV1R1,dimV1R2,dimV2R1,dimV2R2):
 def Z2_sectors(T,dimR):
     if len(T.shape)==2*len(dimR): dimR=[d for d in dimR for _ in range(2)]
     assert len(T.shape)==len(dimR) and all(i==sum(j) for i,j in zip(T.shape,dimR))
-    for sector in itertools.product(range(2),repeat=len(dimR)):
+    for sector in itt.product(range(2),repeat=len(dimR)):
         begin=[sum(dimR[leg][:rep]) for leg,rep in enumerate(sector)]
         end=[sum(dimR[leg][:rep+1]) for leg,rep in enumerate(sector)]
         slices=[slice(b,e) for b,e in zip(begin,end)]
@@ -130,6 +132,8 @@ def gauge_invariant_norm(T):
         norm=contract('iijj->',T)
     elif spacial_dim==3:
         norm=contract('iijjkk->',T)
+    if norm<1e-6:#fallback
+        norm=T.norm()
     #norm=T.norm()
     #print(norm)
     return norm
@@ -173,23 +177,23 @@ def forward_observable_tensor(T0,T0_op,layers:'list[HOTRGLayer]',
 
     
 def forward_observalbe_tensor_moments(T0_moments:'list[torch.Tensor]',layers:'list[HOTRGLayer]',
-        checkerboard=False,use_checkpoiont=False,return_layers=False,cached_Ts=None):
+        checkerboard=False,use_checkpoint=False,return_layers=False,cached_Ts=None):
     # -T'[OO]- = -T[OO]-T[1]- + 2 -T[O]-T[O]- + -T[1]-T[OO]-      
-    spacial_dim=len(T0.shape)//2
+    spacial_dim=len(T0_moments[0].shape)//2
     logTotal=0
     Tms=T0_moments.copy()
     if return_layers:
         Tmss,logTotals=[Tms],[logTotal]
     for ilayer,layer in tqdm(list(enumerate(layers)),leave=False):
         norm=gauge_invariant_norm(Tms[0])
-        Tms=[x/norm for x in Tms]
         logTotal=2*(logTotal+norm.log())
+        Tms=[x/norm for x in Tms]
         Tms1=[torch.zeros_like(Tms[0])]*len(Tms)
         for a in range(len(Tms)):
             for b in range(len(Tms)):
                 if a+b<len(Tms1):
                     if a+b==0 and cached_Ts:
-                        Tms1[a+b]=cached_Ts[iLayers+1]
+                        Tms1[a+b]=cached_Ts[ilayer+1]
                     else:
                         Tms1[a+b]=math.comb(a+b,b)\
                             *forward_layer(Tms[a],Tms[b],layer=layer,use_checkpoint=use_checkpoint)
@@ -198,40 +202,66 @@ def forward_observalbe_tensor_moments(T0_moments:'list[torch.Tensor]',layers:'li
             Tmss.append(Tms);logTotals.append(logTotal)
             return (Tmss,logTotals) if return_layers else (Tms,logTotal)
     
-    
-def forward_two_observable_tensors(T0,T0_op1,T0_op2,coords:"list[int]",layers:'list[HOTRGLayer]',checkerboard=False,use_checkpoint=False,cached_Ts=None):
+def get_lattice_size(nLayers,spacial_dim):
+    return tuple(2**(nLayers//spacial_dim+(1 if i<nLayers%spacial_dim else 0)) for i in range(spacial_dim))
+
+def get_dist_torus_2D(x,y,lattice_size):
+    d1=x**2+y**2
+    d2=(lattice_size[0]-x)**2+y**2
+    d3=x**2+(lattice_size[1]-y)**2
+    d4=(lattice_size[0]-x)**2+(lattice_size[1]-y)**2
+    return functools.reduce(np.minimum,[d1,d2,d3,d4])**.5
+
+def forward_coordinate(coords):
+    return coords[1:]+(coords[0]//2,)
+
+
+
+
+def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
+        layers:'list[HOTRGLayer]',checkerboard=False,use_checkpoint=False,cached_Ts=None):
     spacial_dim=len(T0.shape)//2
     nLayers=len(layers)
-    T,T_op1,T_op2,T_op12,logTotal=T0,T0_op1,T0_op2,None,0
+    lattice_size=get_lattice_size(nLayers,spacial_dim=spacial_dim)
+    assert all(isinstance(c,int) and 0<=c and c<s for coords in positions for c,s in zip(coords,lattice_size))
+    assert all(positions[i]!=positions[j] for i,j in itt.combinations(range(len(positions)),2))
+    T,T_ops,logTotal=T0,T0_ops.copy(),0
     for ilayer,layer in tqdm(list(enumerate(layers)),leave=False):
         norm=gauge_invariant_norm(T)
-        T,T_op1,T_op2,T_op12=(t/norm if t is not None else None for t in (T,T_op1,T_op2,T_op12))
         logTotal=2*(logTotal+norm.log())
-        #Evolve vacuum T
+        T,T_ops=T/norm,[T_op/norm for T_op in T_ops]
+        # check if any two points are going to merge
+        iRemoved=[]
+        T_ops_new,positions_new=[],[]
+        for i,j in itt.combinations(range(len(positions)),2):
+            if forward_coordinate(positions[i])==forward_coordinate(positions[j]):
+                i,j=(i,j) if positions[i][0]%2==0 else (j,i)
+                assert positions[i][0]==0 and positions[j][0]==1
+                T_op_new=forward_layer(T_ops[i],T_ops[j],layer,use_checkpoint=use_checkpoint)
+                T_op_new=-T_op_new if checkerboard and ilayer<spacial_dim else T_op_new
+                T_ops_new.append(T_op_new)
+                positions_new.append(forward_coordinate(positions[i]))
+                assert (not i in iRemoved) and (not j in iRemoved)
+                iRemoved.extend([i,j])
+        # forward other points with T
+        for i in range(len(positions)):
+            if i not in iRemoved:
+                if positions[i][0]%2==0:
+                    T_op_new=forward_layer(T_ops[i],T,layer,use_checkpoint=use_checkpoint)
+                else:
+                    T_op_new=forward_layer(T,T_ops[i],layer,use_checkpoint=use_checkpoint)
+                T_op_new=-T_op_new if checkerboard and ilayer<spacial_dim else T_op_new
+                T_ops_new.append(T_op_new)
+                positions_new.append(forward_coordinate(positions[i]))
+        # forward T
         if cached_Ts:
-            T1=cached_Ts[ilayer+1]
+            T_new=cached_Ts[ilayer+1]
         else:
-            T1=forward_layer(T,T,layer=layer,use_checkpoint=use_checkpoint)
-        #Evolve defected T depends on whether the two defects are in the same coarse-grained block
-        if not all(c==0 for c in coords):
-            c=coords[0]%2
-            T2=forward_layer(T_op1,T,layer=layer,use_checkpoint=use_checkpoint)
-            if c==0:
-                T3=forward_layer(T_op2,T,layer=layer,use_checkpoint=use_checkpoint)
-            elif c==1:
-                T3=forward_layer(T,T_op2,layer=layer,use_checkpoint=use_checkpoint)
-                T3=-T3 if checkerboard and ilayer<spacial_dim else T3
-            coords=coords[1:]+[coords[0]//2]
-            T,T_op1,T_op2=T1,T2,T3
-        elif T_op1 is not None and T_op2 is not None:
-            T2=forward_layer(T_op1,T_op2,layer=layer,use_checkpoint=use_checkpoint)
-            T2=-T2 if checkerboard and ilayer<spacial_dim else T2
-            T,T_op12,T_op1,T_op2=T1,T2,None,None
-        else:
-            T2=forward_layer(T_op12,T,layer=layer,use_checkpoint=use_checkpoint)
-            T,T_op12=T1,T2
-    return T,T_op12,logTotal
-    
+            T_new=forward_layer(T,T,layer=layer,use_checkpoint=use_checkpoint)
+        T,T_ops,positions=T_new,T_ops_new,positions_new
+    assert len(positions)==1
+    return T,T_ops[0],logTotal
+
     
     
 def trace_tensor(T):
@@ -384,3 +414,56 @@ def HOTRG_layers(T0,max_dim,nLayers,dimR:"tuple[tuple[int]]"=None,return_tensors
 
 
     
+
+
+
+
+
+
+
+
+'''
+def forward_two_observable_tensors(T0,T0_op1,T0_op2,coords:"tuple[int]",layers:'list[HOTRGLayer]',checkerboard=False,use_checkpoint=False,cached_Ts=None):
+    spacial_dim=len(T0.shape)//2
+    nLayers=len(layers)
+    lattice_size=get_lattice_size(nLayers,spacial_dim=spacial_dim)
+    #print(coords,lattice_size)
+    assert all(isinstance(c,int) and 0<=c and c<s for c,s in zip(coords,lattice_size))
+    assert not all(c==0 for c in coords)
+    T,T_op1,T_op2,T_op12,logTotal=T0,T0_op1,T0_op2,None,0
+    for ilayer,layer in tqdm(list(enumerate(layers)),leave=False):
+        norm=gauge_invariant_norm(T)
+        logTotal=2*(logTotal+norm.log())
+        T,T_op1,T_op2,T_op12=(t/norm if t is not None else None for t in (T,T_op1,T_op2,T_op12))
+        #Evolve vacuum T
+        if cached_Ts:
+            T1=cached_Ts[ilayer+1]
+        else:
+            T1=forward_layer(T,T,layer=layer,use_checkpoint=use_checkpoint)
+        #Evolve defected T depends on whether the two defects are in the same coarse-grained block
+        #print(coords)
+        if coords==(0,)*spacial_dim:
+            T2=forward_layer(T_op12,T,layer=layer,use_checkpoint=use_checkpoint)
+            T,T_op12=T1,T2
+        elif coords==(1,)+(0,)*(spacial_dim-1):
+            T2=forward_layer(T_op1,T_op2,layer=layer,use_checkpoint=use_checkpoint)
+            T2=-T2 if checkerboard and ilayer<spacial_dim else T2
+            T,T_op12,T_op1,T_op2=T1,T2,None,None
+        else:
+            c=coords[0]%2
+            T2=forward_layer(T_op1,T,layer=layer,use_checkpoint=use_checkpoint)
+            if c==0:
+                T3=forward_layer(T_op2,T,layer=layer,use_checkpoint=use_checkpoint)
+            elif c==1:
+                T3=forward_layer(T,T_op2,layer=layer,use_checkpoint=use_checkpoint)
+                T3=-T3 if checkerboard and ilayer<spacial_dim else T3
+            T,T_op1,T_op2=T1,T2,T3
+        coords=forward_coordinate(coords)
+    assert coords==(0,)*spacial_dim
+    return T,T_op12,logTotal
+
+
+
+
+
+'''

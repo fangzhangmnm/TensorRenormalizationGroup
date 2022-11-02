@@ -70,39 +70,97 @@ def project_Z2(T,dimR,weights=[1,0],tolerance=float('inf')):
 
 @dataclass
 class HOTRGLayer:
+    tensor_shape:'tuple(int)'
     ww:'list[torch.Tensor]'
     dimR:'tuple[tuple[int]]'=None
     dimR_next:'tuple[tuple[int]]'=None
     gg:'list[list[torch.Tensor]]'=None
+    hh:'list[list[torch.Tensor]]'=None
+
+    def get_isometry(self,i):
+        #         h0
+        #         g00                   
+        #    /g02-Ta-g03\       0       2
+        #h2-w0    |g..  w0-h3  2T3  -> 0T'1  
+        #    \g12-Tb-g13/       1       3
+        #         g11                      
+        #         h1
+        iAxis=i//2
+        if iAxis==0:
+            w=torch.eye(self.tensor_shape[i])
+            if self.gg:
+                w=self.gg[i][i]@w
+            if self.hh:
+                w=self.hh[i]@w
+        else:
+            w=self.ww[iAxis-1]
+            if self.dimR:
+                P=RepMat(self.dimR[iAxis][0],self.dimR[iAxis][1],self.dimR[iAxis][0],self.dimR[iAxis][1])
+                w=contract('ab,bij->aij',w,P)
+            else:
+                w=w.reshape(-1,self.tensor_shape[i],self.tensor_shape[i])
+            if i%2==1:
+                w=w.conj()
+            if self.gg:
+                w=contract('aij,iI,jJ->aIJ',w,self.gg[0][i],self.gg[1][i])
+            if self.hh:
+                w=contract('aij,Aa->Aij',w,self.hh[i])
+        return w
+    def get_insertion(self):
+        if self.gg:
+            return self.gg[0][1].T@self.gg[1][0]
+        else:
+            return torch.eye(self.tensor_shape[0])
+        
+
+def _forward_layer(Ta,Tb,layer:HOTRGLayer):
+    spacial_dim=len(Ta.shape)//2
+    assert layer.tensor_shape==Ta.shape and layer.tensor_shape==Tb.shape
+    isometries=[layer.get_isometry(i) for i in range(2*spacial_dim)]
+    insertion=layer.get_insertion()
+    eq={2:'ijkl,Jmno,jJ,xi,ym,akn,blo->abxy',3:'ijklmn,Jopqrs,jJ,xi,yo,akp,blq,cmr,dns->abcdxy'}[spacial_dim]
+    T=contract(eq,Ta,Tb,insertion,*isometries)
+    #Tref=_forward_layer_2D(Ta,Tb,layer)
+    #print((T-Tref).norm())
+    return T
+
 
 def _forward_layer_2D(Ta,Tb,layer:HOTRGLayer):
-    #         |                   
-    #    /g0-Ta-g1\       0       2
-    #  -w     |    w-    2T3  -> 0T'1  
-    #    \h0-Tb-h1/       1       3
-    #         |                      
-    ww,dimR,gg=layer.ww,layer.dimR,layer.gg
+    #         h0
+    #         g00                   
+    #    /g02-Ta-g03\       0       2
+    #h2-w     |g     w-h3  2T3  -> 0T'1  
+    #    \g12-Tb-g13/       1       3
+    #         g11                      
+    #         h1
+    
+    ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
+    assert T0Shape==Ta.shape and T0Shape==Tb.shape
     if gg:
-        Ta=contract('ijkl,Kk,Ll->ijKL',Ta,*gg[0])
-        Tb=contract('ijkl,Kk,Ll->ijKL',Tb,*gg[1])
+        Ta=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Ta,*gg[0])
+        Tb=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tb,*gg[1])
     if dimR:
         P=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
         wP=contract('ab,bij->aij',ww[0],P)
     else:
         wP=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
-    Tn=contract('ijkl,jmno,akn,blo->abim',Ta,Tb,wP,wP.conj())
+    Tn=contract('ijkl,jmno,akn,blo->imab',Ta,Tb,wP,wP.conj())
+    if hh:
+        Tn=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tn,*hh)
+    Tn=contract('ijab->abij',Tn)
     return Tn
 
 def _forward_layer_3D(Ta,Tb,layer:HOTRGLayer):
-    #       g4|                         5--6
-    #    /g1-T1-g2\      50      34     |1--2
-    #  -w   g8|g3  w-    2T3  -> 0T'1   7| 8|
-    #    \g5-T2-g6/       14      52     3--4
-    #         |g7 
-    ww,dimR,gg=layer.ww,layer.dimR,layer.gg
+    #      g|                         5--6
+    #    /g-T1-g\      50      34     |1--2
+    # h-w  g|g  w-h   2T3  -> 0T'1    7| 8|
+    #    \g-T2-g/      14      52      3--4
+    #       |g 
+    ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
+    assert T0Shape==Ta.shape and T0Shape==Tb.shape
     if gg:
-        Ta=contract('ijklmn,Kk,Ll,Mm,Nn->ijKLMN',Ta,*gg[0])
-        Tb=contract('ijklmn,Kk,Ll,Mm,Nn->ijKLMN',Tb,*gg[1])
+        Ta=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Ta,*gg[0])
+        Tb=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tb,*gg[1])
     if dimR:
         P1=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
         wP1=contract('ab,bij->aij',ww[0],P1)
@@ -111,8 +169,13 @@ def _forward_layer_3D(Ta,Tb,layer:HOTRGLayer):
     else:
         wP1=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
         wP2=ww[1].reshape(-1,Ta.shape[4],Tb.shape[4])
-    Tn=contract('ijklmn,jopqrs,akp,blq,cmr,dns->abcdio',Ta,Tb,wP1,wP1.conj(),wP2,wP2.conj())
+    Tn=contract('ijklmn,jopqrs,akp,blq,cmr,dns->ioabcd',Ta,Tb,wP1,wP1.conj(),wP2,wP2.conj())
+    if hh:
+        Tn=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tn,*hh)
+    Tn=contract('ijabcd->abcdij')
     return Tn
+
+    
 
 def _checkpoint(function,args,args1,use_checkpoint=True):
     if use_checkpoint and any(x.requires_grad for x in args):
@@ -124,7 +187,7 @@ def _checkpoint(function,args,args1,use_checkpoint=True):
     
 def forward_layer(Ta,Tb,layer:HOTRGLayer,use_checkpoint=False)->torch.Tensor:
     _forward_layer={4:_forward_layer_2D,6:_forward_layer_3D}[len(Ta.shape)]
-    return _checkpoint(_forward_layer,[Ta,Tb],{'layer':layer})
+    return _checkpoint(_forward_layer,[Ta,Tb],{'layer':layer},use_checkpoint=use_checkpoint)
 
 def gauge_invariant_norm(T):
     spacial_dim=len(T.shape)//2
@@ -178,6 +241,7 @@ def forward_observable_tensor(T0,T0_op,layers:'list[HOTRGLayer]',
     
 def forward_observalbe_tensor_moments(T0_moments:'list[torch.Tensor]',layers:'list[HOTRGLayer]',
         checkerboard=False,use_checkpoint=False,return_layers=False,cached_Ts=None):
+    print('WARNING NOT TESTED')
     # -T'[OO]- = -T[OO]-T[1]- + 2 -T[O]-T[O]- + -T[1]-T[OO]-      
     spacial_dim=len(T0_moments[0].shape)//2
     logTotal=0
@@ -236,9 +300,11 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
         for i,j in itt.combinations(range(len(positions)),2):
             if forward_coordinate(positions[i])==forward_coordinate(positions[j]):
                 i,j=(i,j) if positions[i][0]%2==0 else (j,i)
-                assert positions[i][0]==0 and positions[j][0]==1
+                #print(positions[i],positions[j])
+                assert positions[i][0]%2==0 and positions[j][0]%2==1
                 T_op_new=forward_layer(T_ops[i],T_ops[j],layer,use_checkpoint=use_checkpoint)
-                T_op_new=-T_op_new if checkerboard and ilayer<spacial_dim else T_op_new
+                if checkerboard and ilayer<spacial_dim:
+                    T_op_new=-T_op_new
                 T_ops_new.append(T_op_new)
                 positions_new.append(forward_coordinate(positions[i]))
                 assert (not i in iRemoved) and (not j in iRemoved)
@@ -250,7 +316,8 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
                     T_op_new=forward_layer(T_ops[i],T,layer,use_checkpoint=use_checkpoint)
                 else:
                     T_op_new=forward_layer(T,T_ops[i],layer,use_checkpoint=use_checkpoint)
-                T_op_new=-T_op_new if checkerboard and ilayer<spacial_dim else T_op_new
+                    if checkerboard and ilayer<spacial_dim:
+                        T_op_new=-T_op_new
                 T_ops_new.append(T_op_new)
                 positions_new.append(forward_coordinate(positions[i]))
         # forward T
@@ -271,7 +338,86 @@ def trace_tensor(T):
 def trace_two_tensors(T):
     eq={4:'abcc,badd->',6:'abccdd,baeeff->'}[len(T.shape)]
     return contract(eq,T,T)
+ 
+def reflect_tensor_axis(T):
+    Ai=[2*i+j for i in range(len(T.shape)//2) for j in range(2)]
+    Bi=[2*i+1-j for i in range(len(T.shape)//2) for j in range(2)]
+    return contract(T,Ai,Bi)
+    
+def permute_tensor_axis(T):
+    Ai=[*range(len(T.shape))]
+    Bi=Ai[2:]+Ai[:2]
+    return contract(T,Ai,Bi)
+#==================
 
+from HOSVD import HOSVD_layer
+from GILT import GILT_HOTRG,GILT_options
+from fix_gauge import minimal_canonical_form,fix_unitary_gauge,fix_phase,MCF_options
+    
+
+
+def HOTRG_layer(T1,T2,max_dim,dimR=None,options:dict={},Tref=None):
+    gilt_options=GILT_options(**{k[5:]:v for k,v in options.items() if k[:5]=='gilt_'})
+    mcf_options=MCF_options(**{k[4:]:v for k,v in options.items() if k[:4]=='mcf_'})
+    if options.get('gilt_enabled',False):
+        assert not dimR
+        T1,T2,gg=GILT_HOTRG(T1,T2,options=gilt_options)
+    else:
+        gg=None
+    
+    Tn,layer=HOSVD_layer(T1,T2,max_dim=max_dim,dimR=dimR)
+    layer.gg=gg
+    
+    if options.get('mcf_enabled',False):
+        assert not dimR
+        Tn,hh=minimal_canonical_form(Tn,options=mcf_options)
+        if Tref is not None and Tn.shape==Tref.shape:
+            Tn,hh1=fix_phase(Tn,Tref)
+            hh=[h1@h for h1,h in zip(hh1,hh)]
+            if options.get('mcf_enabled_unitary',False):
+                Tn,hh1=fix_unitary_gauge(Tn,Tref)
+                hh=[h1@h for h1,h in zip(hh1,hh)]
+        hh=hh[-2:]+hh[:-2]
+    else:
+        hh=None
+    layer.hh=hh
+    return Tn,layer
+    
+    
+def HOTRG_layers(T0,max_dim,nLayers,
+        dimR:"tuple[tuple[int]]"=None,
+        options:dict={},
+        return_tensors=False):    
+    spacial_dim=len(T0.shape)//2
+    stride=spacial_dim
+    T,logTotal=T0,0
+    if return_tensors:
+        Ts,logTotals=[T],[0]
+    layers=[]
+    for iLayer in tqdm(list(range(nLayers)),leave=False):
+        norm=gauge_invariant_norm(T)
+        T=T/norm
+        logTotal=2*(logTotal+norm.log())
+        
+        Tref=Ts[iLayer+1-stride] if iLayer+1-stride>=0 else None
+        T,layer=HOTRG_layer(T,T,max_dim=max_dim,dimR=dimR,Tref=Tref,options=options)
+        dimR=layer.dimR_next
+        
+        if options.get('hotrg_sanity_check',False):
+            T_tmp=Ts[-1]/gauge_invariant_norm(Ts[-1])
+            assert ((forward_layer(T_tmp,T_tmp,layer)-T).norm()<=options.get('hotrg_sanity_check_tol',1e-7))
+
+        layers.append(layer)
+        if return_tensors:
+            Ts.append(T);logTotals.append(logTotal)
+            
+            
+    return (layers,Ts,logTotals) if return_tensors else layers
+
+    
+    
+#==================
+'''
 def get_w_random(dimRn0,dimRn1,max_dim):
     max_dim-=max_dim%2
     dimRnn0,dimRnn1=max_dim//2,max_dim-max_dim//2
@@ -290,7 +436,7 @@ def generate_random_isometry(dim0,dim1):
 def generate_isometries_random(dimR:"tuple[tuple[int]]",max_dim,nLayers):
     layers=[]
     spacial_dim=len(dimR)
-    for ilayer in range(nLayers):
+    for iLayer in range(nLayers):
         ww=[]
         dimRn=(dimR[-1],)
         for i in range(1,spacial_dim):
@@ -298,123 +444,14 @@ def generate_isometries_random(dimR:"tuple[tuple[int]]",max_dim,nLayers):
             ww.append(w)
             dimRn.append([dimR0,dimR1])
             dimRn+=((dimR0,dimR1),)
-        layers.append(HOTRGLayer(ww=ww,dimR=dimR,dimR_next=dimRn))
+        Tshape=(sum(x) for x in dimR) #todo not sure
+        layers.append(HOTRGLayer(T0shape=Tshape,ww=ww,dimR=dimR,dimR_next=dimRn))
         dimR=dimRn
     return layers
 
-#============================= Generate Isometries ======================================
-
-def get_w_HOSVD(MM:torch.Tensor,max_dim,dimRn:"tuple[int]"=None):
-    # w MM wh
-    if dimRn is None:
-        #S,U=torch.linalg.eigh(MM)#ascending, U S Uh=MM #will fail when there's a lot of zero eigenvalues
-        #S,U=S.flip(0),U.flip(-1)
-        U,S,Vh=svd(MM)
-        w=(U.T)[:max_dim]
-        return w
-    else:
-        MM0,MM1=MM[:dimRn[0],:dimRn[0]],MM[dimRn[0]:,dimRn[0]:]
-        #S0,U0=torch.linalg.eigh(MM0)#ascending, U S Uh=MM
-        #S1,U1=torch.linalg.eigh(MM1)
-        U0,S0,Vh0=svd(MM0)
-        U1,S1,Vh1=svd(MM1)
-        S,U=[S0,S1],[U0,U1]
-        max_dim=min(max_dim,sum(dimRn))
-        chosenEigens=sorted([(-s,0,i) for i,s in enumerate(S0)]+[(-s,1,i) for i,s in enumerate(S1)])[:max_dim]
-        chosenEigens.sort(key=lambda x:x[1])
-        
-        shift=[0,dimRn[0]]
-        dimRnn=[0,0]
-        w=torch.zeros((max_dim,sum(dimRn)))
-        for i,(s,rep,col) in enumerate(chosenEigens):
-            w[i,shift[rep]:shift[rep]+dimRn[rep]]=U[rep][:,col]
-            dimRnn[rep]+=1
-        return w,tuple(dimRnn)
-
-        
-
-def _HOTRG_layer_3D(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None):
-    MM1=contract('ijklmn,jopqrs,itulmn,tovqrs->kpuv',T1,T2,T1.conj(),T2.conj())
-    MM2=contract('ijklmn,jopqrs,itklun,topqvs->mruv',T1,T2,T1.conj(),T2.conj())
-    if dimR:
-        P1=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        dimRn1=RepDim(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        MM1=contract('ijIJ,aij,AIJ->aA',MM1,P1,P1.conj())
-        P2=RepMat(dimR[2][0],dimR[2][1],dimR[2][0],dimR[2][1])
-        dimRn2=RepDim(dimR[2][0],dimR[2][1],dimR[2][0],dimR[2][1])
-        MM2=contract('ijIJ,aij,AIJ->aA',MM2,P2,P2.conj())
-
-        w1,dimRnn1=get_w_HOSVD(MM1,max_dim=max_dim,dimRn=dimRn1)
-        wP1=contract('ab,bij->aij',w1,P1)
-        w2,dimRnn2=get_w_HOSVD(MM2,max_dim=max_dim,dimRn=dimRn2)
-        wP2=contract('ab,bij->aij',w2,P2)
-        
-        dimR_next=(dimRnn1,dimRnn2,dimR[0])
-    else:
-        MM1=MM1.reshape(T1.shape[2]*T2.shape[2],-1)
-        MM2=MM2.reshape(T1.shape[4]*T2.shape[4],-1)
-
-        w1=get_w_HOSVD(MM1,max_dim=max_dim,dimRn=None)
-        wP1=w1.reshape(-1,T1.shape[2],T2.shape[2])
-        w2=get_w_HOSVD(MM2,max_dim=max_dim,dimRn=None)
-        wP2=w2.reshape(-1,T1.shape[4],T2.shape[4])
-        
-        dimR_next=None
-
-    Tn=contract('ijklmn,jopqrs,akp,blq,cmr,dns->abcdio',T1,T2,wP1,wP1.conj(),wP2,wP2.conj())
-    return Tn,HOTRGLayer(ww=[w1,w2],dimR=dimR,dimR_next=dimR_next)
-    
-def _HOTRG_layer_2D(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None):
-    MM=contract('ijkl,jmno,ipql,pmro->knqr',T1,T2,T1.conj(),T2.conj())
-    if dimR:
-        P=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        dimRn=RepDim(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        MM=contract('ijIJ,aij,AIJ->aA',MM,P,P.conj())
-
-        w,dimRnn=get_w_HOSVD(MM,max_dim=max_dim,dimRn=dimRn)
-        wP=contract('ab,bij->aij',w,P)
-        
-        dimR_next=(dimRnn,dimR[0])
-    else:
-        MM=MM.reshape(T1.shape[2]*T2.shape[2],-1)
-
-        w=get_w_HOSVD(MM,max_dim=max_dim)
-        wP=w.reshape(-1,T1.shape[2],T2.shape[2])
-        
-        dimR_next=None
-        
-    Tn=contract('ijkl,jmno,akn,blo->abim',T1,T2,wP,wP.conj())
-    return Tn,HOTRGLayer(ww=[w],dimR=dimR,dimR_next=dimR_next)
-
-def HOTRG_layer(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None)->"tuple[torch.Tensor,HOTRGLayer]":
-    _HOTRG_layer={4:_HOTRG_layer_2D,6:_HOTRG_layer_3D}[len(T1.shape)]
-    return _HOTRG_layer(T1,T2,max_dim=max_dim,dimR=dimR)
-
-
-def HOTRG_layers(T0,max_dim,nLayers,dimR:"tuple[tuple[int]]"=None,return_tensors=False,HOTRG_layer=HOTRG_layer):    
-    spacial_dim=len(T0.shape)//2
-    T,logTotal=T0,0
-    if return_tensors:
-        Ts,logTotals=[T],[0]
-    layers=[]
-    for ilayer in tqdm(list(range(nLayers)),leave=False):
-        norm=gauge_invariant_norm(T)
-        T=T/norm
-        logTotal=2*(logTotal+norm.log())
-        T,layer=HOTRG_layer(T,T,max_dim=max_dim,dimR=dimR)
-        dimR=layer.dimR_next
-
-        #uncomment the following line to sanity check if T can be reproduced by the layers
-        #assert ((forward_layer(Ts[-1]/gauge_invariant_norm(Ts[-1]),Ts[-1]/gauge_invariant_norm(Ts[-1]),layer)-T).norm()==0)
-
-        layers.append(layer)
-        if return_tensors:
-            Ts.append(T);logTotals.append(logTotal)
-    return (layers,Ts,logTotals) if return_tensors else layers
-
 
     
-
+'''
 
 
 

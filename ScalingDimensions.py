@@ -28,7 +28,7 @@ def fix_normalize(T,scaling=2,is_HOTRG=False,norms=None):
         q=q**(1/(1-scaling**spacial_dim))
     return q*T
 
-def get_transfer_matrix_spectrum_2D(T,loop_length:int=4):
+def get_transfer_matrix_spectrum_2D(T,loop_length:int=2):
     M=T
     for i in range(loop_length-2):# Must preserve edge orders
         M=contract('kKab,lLbc->klKLac',M,T).reshape(M.shape[0]*T.shape[0],M.shape[1]*T.shape[1],M.shape[2],T.shape[3])
@@ -56,11 +56,18 @@ def get_transfer_matrix_spectrum_3D(T,loop_length:'tuple[int]'=(1,1)):
     return u,s,vh
 
 
-def get_center_charge(spectrum,aspect=1):
-    return torch.log(spectrum[0])*6*aspect/torch.pi
+#def get_center_charge(spectrum,aspect=1):
+#    return torch.log(spectrum[0])*12/((2*torch.pi)/aspect)
 
-def get_scaling_dimensions(spectrum,aspect=1):
-    return -torch.log(spectrum/spectrum[0])/((2*torch.pi)/aspect)
+#def get_scaling_dimensions(spectrum,aspect=1):
+#    return -torch.log(spectrum/spectrum[0])/((2*torch.pi)/aspect)
+
+    
+def get_center_charge(spectrum,scaling=np.exp(2*np.pi)):
+    return 12*torch.log(spectrum[0])/torch.log(torch.as_tensor(scaling))
+
+def get_scaling_dimensions(spectrum,scaling=np.exp(2*np.pi)):
+    return -torch.log(spectrum/spectrum[0])/torch.log(torch.as_tensor(scaling))
 
 def get_entanglement_entropy(spectrum):
     spectrum=spectrum/torch.sum(spectrum)
@@ -252,4 +259,26 @@ def show_diff(Ts,stride=1):
     plt.ylabel('$|T\'-T|/|T|$')
     plt.yscale('log')
     plt.ylim((1e-7,2))
+    plt.show()
+    
+from HOTRGZ2 import reflect_tensor_axis,permute_tensor_axis
+
+def show_asymmetry(Ts):
+    curve=pd.DataFrame()
+    for i,A in enumerate(Ts):
+        newRow={'layer':i}
+        Arot=permute_tensor_axis(A)
+        Aref=reflect_tensor_axis(A)
+        if A.shape==Arot.shape:
+            newRow['asym_rot']=_toN((Arot-A).norm()/A.norm())
+        newRow['asym_ref']=_toN((Aref-A).norm()/A.norm())
+        newRow={k:_toN(v) for k,v in newRow.items()}
+        curve=curve.append(newRow,ignore_index=True)
+    plt.plot(curve['layer'],curve['asym_rot'],'.-',label='rotation')
+    plt.plot(curve['layer'],curve['asym_ref'],'x-',label='reflection')
+    plt.legend()
+    plt.xlabel('RG Step')
+    plt.ylabel('$|T\'-T|/|T|$')
+    #plt.yscale('log')
+    plt.ylim((0,1))
     plt.show()

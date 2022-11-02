@@ -181,11 +181,6 @@ def GILT_Cube_one(As,leg,options:GILT_options=GILT_options()):
     
     
     
-from HOTRGZ2 import HOTRG_layer
-import importlib
-import fix_gauge
-importlib.reload(fix_gauge)
-from fix_gauge import fix_gauge_2D
 
 def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     #      O  | O                 
@@ -202,9 +197,11 @@ def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     u2,vh2=GILT_Square_one([T2,T2,T1,T1],leg='12',options=options)
     T2=contract('ijkl,Kk,Ll->ijKL',T2,vh2,u2.T)
     
-    gg=[[vh1,u1.T],[vh2,u2.T]]
-    #Y1=contract('ijkl,Kk,Ll->ijKL',Y1,*gg[0])
-    #Y2=contract('ijkl,Kk,Ll->ijKL',Y2,*gg[1])
+    I=torch.eye(T1.shape[0])
+
+    gg=[[I,I,vh1,u1.T],[I,I,vh2,u2.T]]
+    #Y1=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Y1,*gg[0])
+    #Y2=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Y2,*gg[1])
     #print((T1-Y1).norm(),(T2-Y2).norm())
     return T1,T2,gg
 
@@ -273,35 +270,42 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
         u,vh=GILT_Cube_one(T12s,leg='48',options=options)
         T2,g7,g8=contract(contract45,T2,vh,u.T),vh@g7,u.T@g8
     
-    gg=[[g1,g2,g3,g4],[g5,g6,g7,g8]]
+    I=torch.eye(T1.shape[0])
+
+    gg=[[I,I,g1,g2,g3,g4],[I,I,g5,g6,g7,g8]]
     
-    Y1=contract('ijklmn,Kk,Ll,Mm,Nn->ijKLMN',Y1,*gg[0])
-    Y2=contract('ijklmn,Kk,Ll,Mm,Nn->ijKLMN',Y2,*gg[1])
+    Y1=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Y1,*gg[0])
+    Y2=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Y2,*gg[1])
     print((Y1-T1).norm(),(Y2-T2).norm())
     
     return T1,T2,gg
+
+def GILT_HOTRG(T1,T2,options:GILT_options=GILT_options()):
+    _GILT_HOTRG={2:GILT_HOTRG2D,3:GILT_HOTRG3D}[len(T1.shape)//2]
+    T1,T2,gg=_GILT_HOTRG(T1,T2,options=options)
+    if options.record_S:
+        import matplotlib.pyplot as plt
+        plt.hist(recorded_S[0],bins=np.logspace(-9,0,50),log=True)
+        plt.xscale('log')
+        plt.show()
+        recorded_S.clear()
+    return T1,T2,gg
     
+'''
+from HOSVD import HOSVD_layer
+from fix_gauge import fix_gauge_2D,minimal_canonical_form,fix_phase
     
-def GILT_HOTRG_layer(T1,T2,max_dim,dimR=None,options:GILT_options=GILT_options()):
+def GILT_HOSVD_layer(T1,T2,max_dim,dimR=None,options:GILT_options=GILT_options()):
     if options.enabled:
         assert not dimR
-        spacial_dim=len(T1.shape)//2
-        _GILT_HOTRG={2:GILT_HOTRG2D,3:GILT_HOTRG3D}[spacial_dim]
-        T1,T2,gg=_GILT_HOTRG(T1,T2,options=options)
-        Tn,layer=HOTRG_layer(T1,T2,max_dim=max_dim,dimR=dimR)
+        T1,T2,gg=GILT_HOTRG(T1,T2,options=options)
+        Tn,layer=HOSVD_layer(T1,T2,max_dim=max_dim,dimR=dimR)
         layer.gg=gg
-
-        if options.record_S:
-            import matplotlib.pyplot as plt
-            plt.hist(recorded_S[0],bins=np.logspace(-9,0,50),log=True)
-            plt.xscale('log')
-            plt.show()
-            recorded_S.clear()
         return Tn,layer
     else:
-        return HOTRG_layer(T1,T2,max_dim=max_dim,dimR=dimR)
+        return HOSVD_layer(T1,T2,max_dim=max_dim,dimR=dimR)
     
-    
+'''
 
 #============= GILT On TRG=============
 
@@ -374,7 +378,9 @@ def evolve_TRG_GILT_2D(T0,nLayers,max_dim,return_layers=False,options:GILT_optio
             assert False 
         
         if options.fix_gauge and T.shape==Ts[-1].shape:
-            T,uu=fix_gauge_2D(T,Ts[-1])
+            #T=fix_gauge_2D(T,Ts[-1])
+            T,_=minimal_canonical_form(T)
+            T,_=fix_phase(T,Ts[-1])
         if return_layers: 
             Ts.append(T);logTotals.append(logTotal)
     if return_layers:

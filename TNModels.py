@@ -3,6 +3,7 @@ import numpy as np
 from opt_einsum import contract
 from scipy.special import comb
 from HOTRGZ2 import project_Z2
+from collections import namedtuple
 
 Models={}
 
@@ -14,7 +15,9 @@ class TNModel:
     def __init__(self,params):
         params={k:(params[k] if k in params else v) for k,v in self.get_default_params().items()}
         self.params={k:torch.as_tensor(v).type(torch.get_default_dtype()) for k,v in params.items()}
-    
+
+ObservableInfo=namedtuple("ObservableInfo",["name","T0","checkerboard"])
+
 @_register_model
 class Ising2D(TNModel):
     @staticmethod 
@@ -23,7 +26,6 @@ class Ising2D(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=2
-        self.observable_checkerboard=False
         
     def get_T0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -36,8 +38,8 @@ class Ising2D(TNModel):
     def get_dimR(self,Z2=True):
         return ((1,1),)*self.spacial_dim if Z2 else ((2,0),)*self.spacial_dim
     
-    def get_T_op0s(self):
-        yield 'SZ',self.get_SZT0(),False
+    def get_observables(self):
+        yield ObservableInfo("magnetization",self.get_SZT0(),False)
     
     def get_SZT0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -67,7 +69,6 @@ class Ising3D(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=3
-        self.observable_checkerboard=False
         
     def get_T0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -80,8 +81,8 @@ class Ising3D(TNModel):
     def get_dimR(self,Z2=True):
         return ((1,1),)*self.spacial_dim if Z2 else ((2,0),)*self.spacial_dim
     
-    def get_T_op0s(self):
-        yield 'SZ',self.get_SZT0(),False
+    def get_observables(self):
+        yield ObservableInfo("magnetization",self.get_SZT0(),False)
     
     def get_SZT0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -152,13 +153,18 @@ class AKLT2D(TNModel):
     @staticmethod 
     def get_default_params():
         return {'a1':np.sqrt(6/4),'a2':np.sqrt(6/1)}
+
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=2
-        self.observable_checkerboard=True
         
     def get_dimR(self,Z2=True):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
+
+    def get_observables(self):
+        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
+        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
+        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
         
     def get_T(self,op):
         projector=get_CG_no_normalization(2)
@@ -185,11 +191,15 @@ class AKLT2DStrange(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=2
-        self.observable_checkerboard=True#???
         
     def get_dimR(self,Z2=True):
         # TODO ?????
         return ((2,0),)*self.spacial_dim
+
+    def get_observables(self):
+        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
+        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
+        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
         
     def get_T(self,op):
         projector=get_CG_no_normalization(2)
@@ -216,10 +226,14 @@ class AKLT3D(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=3
-        self.observable_checkerboard=True
         
     def get_dimR(self,Z2=True):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
+        
+    def get_observables(self):
+        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
+        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
+        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
     
     def get_T(self,op):
         projector=get_CG_no_normalization(3)
@@ -246,10 +260,14 @@ class AKLTHoneycomb(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=2
-        self.observable_checkerboard=False
         
     def get_dimR(self,Z2=True):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
+        
+    def get_observables(self):
+        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
+        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
+        yield ObservableInfo("magnetizationZ",self.get_ST0(2),False)
         
     def get_T(self,ops):
         projector=get_CG_no_normalization(3/2)
@@ -279,7 +297,7 @@ class AKLTDiamond(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=3
-        self.observable_checkerboard=False
+        #self.observable_checkerboard=False
         
     def get_dimR(self,Z2=True):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
@@ -322,7 +340,7 @@ class AKLTSinglyDecoratedDiamond(TNModel):
     def __init__(self,params={}):
         super().__init__(params)
         self.spacial_dim=3
-        self.observable_checkerboard=False
+        #self.observable_checkerboard=False
         
     def get_dimR(self,Z2=True):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim

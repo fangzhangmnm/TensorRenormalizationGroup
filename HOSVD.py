@@ -1,9 +1,15 @@
 import torch
+import numpy as np
 from tqdm.auto import tqdm as tqdm
 from opt_einsum import contract
 
-from safe_svd import svd,sqrt # TODO is it necessary???
+#from safe_svd import svd,sqrt # TODO is it necessary???
+from torch.linalg import svd
 
+
+import importlib
+import HOTRGZ2
+importlib.reload(HOTRGZ2)
 from HOTRGZ2 import RepMat,RepDim,HOTRGLayer,gauge_invariant_norm
 
 
@@ -110,15 +116,17 @@ def _HOSVD_layer_2D(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None):
     return Tn,HOTRGLayer(tensor_shape=T1.shape,ww=[w],dimR=dimR,dimR_next=dimR_next)
 
 def HOSVD_layer(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None)->"tuple[torch.Tensor,HOTRGLayer]":
-    _HOSVD_layer={4:_HOSVD_layer_2D,6:_HOSVD_layer_3D}[len(T1.shape)]
+    _HOSVD_layer={4:_HOSVD_layer_2D,5:_HOSVD_layer_2D_PEPS,6:_HOSVD_layer_3D}[len(T1.shape)]
     return _HOSVD_layer(T1,T2,max_dim=max_dim,dimR=dimR)
 
 
 
 
 
-def _HOSVD_layer_2D_PEPS(T1,T2,max_dim,max_dim_P,dimR:"tuple[tuple[int]]"=None):
-    MM1=contract('ijklA,jmnoB,ipqlA,pmroB->knqr',T1,T2,T1.conj(),T2.conj())
+def _HOSVD_layer_2D_PEPS(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None):
+    max_dim_v,max_dim_p=max_dim
+    MM1=contract('ijklA,jmnoB,ipqlA,pmroB->knqrAB',T1,T2,T1.conj(),T2.conj())
+    MM1=MM1[:,:,:,:,0,0]
     MMP=contract('ijkla,jmnob,iJklA,JmnoB->abAB',T1,T2,T1.conj(),T2.conj())
     if dimR:
         P1,dimRn1=_RepMatDim(dimR[1][0],dimR[1][1])
@@ -126,8 +134,8 @@ def _HOSVD_layer_2D_PEPS(T1,T2,max_dim,max_dim_P,dimR:"tuple[tuple[int]]"=None):
         PP,dimRnP=_RepMatDim(dimR[2][0],dimR[2][1])
         MMP=contract('ijIJ,aij,AIJ->aA',MMP,PP,PP.conj())
 
-        w1,dimRnn1=get_w_HOSVD(MM1,max_dim=max_dim,dimRn=dimRn1)
-        wP,dimRnnP=get_w_HOSVD(MMP,max_dim=max_dim_P,dimRn=dimRnP)
+        w1,dimRnn1=get_w_HOSVD(MM1,max_dim=max_dim_v,dimRn=dimRn1)
+        wP,dimRnnP=get_w_HOSVD(MMP,max_dim=max_dim_p,dimRn=dimRnP)
 
         wP1=contract('ab,bij->aij',w1,P1)
         wPP=contract('ab,bij->aij',wP,PP)
@@ -135,10 +143,35 @@ def _HOSVD_layer_2D_PEPS(T1,T2,max_dim,max_dim_P,dimR:"tuple[tuple[int]]"=None):
         dimR_next=(dimRnn1,dimR[0],dimRnnP)
     else:
         MM1=MM1.reshape(T1.shape[2]*T2.shape[2],-1)
-        MMP=MMP.reshape(T1.shape[4]*T2.shape[4],-1)
-
-        w1=get_w_HOSVD(MM1,max_dim=max_dim)
-        wP=get_w_HOSVD(MMP,max_dim=max_dim_P)
+        MMP=MMP.reshape(T1.shape[4]*T2.shape[4],-1)        
+        
+        w1=get_w_HOSVD(MM1,max_dim=max_dim_v)
+        wP=get_w_HOSVD(MMP,max_dim=max_dim_p)
+        
+        #wP=wP[-1,:]+wP[:-1,:]
+        #wP[0]=0
+        #wP[0,0]=1
+        '''
+        if max_dim_p==2:
+            wP=torch.zeros(2,2,2)
+            wP[0,0,0]=1
+            wP[1,1,1]=1
+            wP=wP.reshape(2,4)
+        elif max_dim_p==1:
+            wP=torch.ones(1,1)
+        elif max_dim_p==3:
+            cur_dim_p=T1.shape[4]
+            wP=torch.zeros(3,3,3)
+            wP[0,0,0]=1
+            wP[1,0,1]=1
+            wP[1,1,0]=1
+            wP[2,1,1]=1
+            wP[2,2,0]=1
+            wP[2,0,2]=1
+            wP=wP[:,:cur_dim_p,:cur_dim_p].reshape(3,-1)
+        for i in range(wP.shape[0]):
+            wP[i]=wP[i]/wP[i].norm()
+        '''
 
         wP1=w1.reshape(-1,T1.shape[2],T2.shape[2])
         wPP=wP.reshape(-1,T1.shape[4],T2.shape[4])
@@ -148,10 +181,6 @@ def _HOSVD_layer_2D_PEPS(T1,T2,max_dim,max_dim_P,dimR:"tuple[tuple[int]]"=None):
     Tn=contract('ijkla,jmnob,Jkn,Klo,Aab->JKimA',T1,T2,wP1,wP1.conj(),wPP)
     return Tn,HOTRGLayer(tensor_shape=T1.shape,ww=[w1,wP],dimR=dimR,dimR_next=dimR_next)
 
-
-def HOSVD_layer_PEPS(T1,T2,max_dim,dimR:"tuple[tuple[int]]"=None)->"tuple[torch.Tensor,HOTRGLayer]":
-    _HOSVD_layer_PEPS={5:_HOSVD_layer_2D_PEPS}[len(T1.shape)]
-    return _HOSVD_layer_PEPS(T1,T2,max_dim=max_dim,dimR=dimR)
 
 
 

@@ -1,0 +1,385 @@
+
+======================================================================
+
+Running scaldimer.py with the following parameters:
+A_chis = None
+A_eps = 1e-11
+H = 0j
+J = (1+0j)
+algorithm = TNR
+beta = 0.44068679350977147
+block_width = 4
+chis_tnr = [14]
+chis_trg = [28]
+defect_angles = [0.0, 3.141592653589793]
+do_coarse_momenta = True
+do_dual = False
+do_eigenvectors = False
+do_momenta = True
+draw_defect_angle = False
+draw_exact_circles = True
+draw_exact_lines = True
+dtype = <class 'numpy.complex128'>
+fix_gauges = True
+horz_refl = True
+initial2x2 = False
+initial4x4 = True
+iter_count = 5
+max_dim_plot = 4.3
+model = ising
+n_dims_do = 50
+n_dims_plot = 50
+n_discard = 0
+opt_eps_chi = 1e-08
+opt_eps_conv = 1e-11
+opt_iters_tens = 1
+opt_max_iter = 10000
+plot_by_alpha = False
+plot_by_momenta = True
+plot_by_qnum = False
+print_errors = 2
+qnums_do = []
+qnums_plot = []
+return_gauges = True
+return_pieces = True
+reuse_initial = True
+save_fit_plot = False
+save_plots = False
+save_scaldim_file = True
+show_plots = True
+sixvertex_a = 1
+sixvertex_b = 1
+sixvertex_c = 1.4142135623730951
+symmetry_tensors = True
+xtick_rotation = [0, 45]
+Constructing scaling dimensions.
+
+======================================================================
+
+Generating the normalized, coarse-grained tensor with the following parameters:
+A_chis = None
+A_eps = 1e-11
+H = 0j
+J = (1+0j)
+algorithm = TNR
+beta = 0.44068679350977147
+block_width = 4
+chis_tnr = [14]
+chis_trg = [28]
+defect_angles = [0.0, 3.141592653589793]
+do_coarse_momenta = False
+do_dual = False
+do_eigenvectors = False
+do_momenta = True
+draw_defect_angle = False
+draw_exact_circles = True
+draw_exact_lines = True
+dtype = <class 'numpy.complex128'>
+fix_gauges = True
+horz_refl = True
+initial2x2 = False
+initial4x4 = True
+iter_count = 5
+max_dim_plot = 4.3
+model = ising
+n_dims_do = 50
+n_dims_plot = 50
+n_discard = 0
+opt_eps_chi = 1e-08
+opt_eps_conv = 1e-11
+opt_iters_tens = 1
+opt_max_iter = 10000
+plot_by_alpha = False
+plot_by_momenta = True
+plot_by_qnum = False
+print_errors = 2
+qnums_do = []
+qnums_plot = []
+return_gauges = True
+return_pieces = True
+reuse_initial = True
+save_errors = False
+save_fit_plot = False
+save_plots = False
+save_scaldim_file = True
+show_plots = True
+sixvertex_a = 1
+sixvertex_b = 1
+sixvertex_c = 1.4142135623730951
+symmetry_tensors = True
+xtick_rotation = [0, 45]
+
+ / Coarse-graining, iter_count = #1: / 
+goo
+Beginning a TNR step.
+-Splitting A, with eps=1.000e-11.
+Relative truncation error in SVD: 9.628e-12
+Split A NWSE with chi=198
+-Splitting A, with eps=1.000e-11.
+Relative truncation error in SVD: 9.628e-12
+Split A NESW with chi=198
+Not using the SVDed A.
+-Optimizing u, v and w.
+Optimizing for chi = 14.
+Optimizing isometries.
+Relative truncation error in eig: 4.567e-08
+  Change in norm when optimizing: infOptimizing isometries.
+Relative truncation error in eig: 3.876e-08
+  Change in norm when optimizing: 1.731e-08Optimizing isometries.
+Relative truncation error in eig: 3.611e-08
+  Change in norm when optimizing: 6.830e-09Optimizing isometries.
+Relative truncation error in eig: 3.427e-08
+  Change in norm when optimizing: 4.802e-09Optimizing isometries.
+Relative truncation error in eig: 3.285e-08
+  Change in norm when optimizing: 3.680e-09Optimizing isometries.
+Relative truncation error in eig: 3.171e-08
+  Change in norm when optimizing: 2.868e-09Optimizing isometries.
+Relative truncation error in eig: 3.080e-08
+  Change in norm when optimizing: 2.222e-09Optimizing isometries.
+Relative truncation error in eig: 3.006e-08
+  Change in norm when optimizing: 1.724e-09Optimizing isometries.
+Relative truncation error in eig: 2.944e-08
+  Change in norm when optimizing: 1.345e-09Optimizing isometries.
+Relative truncation error in eig: 2.893e-08
+  Change in norm when optimizing: 1.055e-09Optimizing isometries.
+Relative truncation error in eig: 2.851e-08
+  Change in norm when optimizing: 8.381e-10Optimizing isometries.
+Relative truncation error in eig: 2.817e-08
+  Change in norm when optimizing: 6.782e-10Optimizing isometries.
+Relative truncation error in eig: 2.788e-08
+  Change in norm when optimizing: 5.604e-10Optimizing isometries.
+Relative truncation error in eig: 2.764e-08
+  Change in norm when optimizing: 4.728e-10Optimizing isometries.
+Relative truncation error in eig: 2.744e-08
+  Change in norm when optimizing: 4.066e-10Optimizing isometries.
+Relative truncation error in eig: 2.726e-08
+  Change in norm when optimizing: 3.560e-10Optimizing isometries.
+Relative truncation error in eig: 2.711e-08
+  Change in norm when optimizing: 3.167e-10Optimizing isometries.
+Relative truncation error in eig: 2.698e-08
+  Change in norm when optimizing: 2.858e-10Optimizing isometries.
+Relative truncation error in eig: 2.686e-08
+  Change in norm when optimizing: 2.611e-10Optimizing isometries.
+Relative truncation error in eig: 2.675e-08
+  Change in norm when optimizing: 2.412e-10Optimizing isometries.
+Relative truncation error in eig: 2.665e-08
+  Change in norm when optimizing: 2.249e-10Optimizing isometries.
+Relative truncation error in eig: 2.657e-08
+  Change in norm when optimizing: 2.115e-10Optimizing isometries.
+Relative truncation error in eig: 2.648e-08
+  Change in norm when optimizing: 2.002e-10Optimizing isometries.
+Relative truncation error in eig: 2.641e-08
+  Change in norm when optimizing: 1.908e-10Optimizing isometries.
+Relative truncation error in eig: 2.633e-08
+  Change in norm when optimizing: 1.827e-10Optimizing isometries.
+Relative truncation error in eig: 2.627e-08
+  Change in norm when optimizing: 1.757e-10Optimizing isometries.
+Relative truncation error in eig: 2.620e-08
+  Change in norm when optimizing: 1.697e-10Optimizing isometries.
+Relative truncation error in eig: 2.614e-08
+  Change in norm when optimizing: 1.644e-10Optimizing isometries.
+Relative truncation error in eig: 2.608e-08
+  Change in norm when optimizing: 1.597e-10Optimizing isometries.
+Relative truncation error in eig: 2.602e-08
+  Change in norm when optimizing: 1.556e-10Optimizing isometries.
+Relative truncation error in eig: 2.597e-08
+  Change in norm when optimizing: 1.519e-10Optimizing isometries.
+Relative truncation error in eig: 2.592e-08
+  Change in norm when optimizing: 1.485e-10Optimizing isometries.
+Relative truncation error in eig: 2.586e-08
+  Change in norm when optimizing: 1.455e-10Optimizing isometries.
+Relative truncation error in eig: 2.581e-08
+  Change in norm when optimizing: 1.427e-10Optimizing isometries.
+Relative truncation error in eig: 2.576e-08
+  Change in norm when optimizing: 1.402e-10Optimizing isometries.
+Relative truncation error in eig: 2.571e-08
+  Change in norm when optimizing: 1.379e-10Optimizing isometries.
+Relative truncation error in eig: 2.567e-08
+  Change in norm when optimizing: 1.358e-10Optimizing isometries.
+Relative truncation error in eig: 2.562e-08
+  Change in norm when optimizing: 1.338e-10Optimizing isometries.
+Relative truncation error in eig: 2.557e-08
+  Change in norm when optimizing: 1.319e-10Optimizing isometries.
+Relative truncation error in eig: 2.552e-08
+  Change in norm when optimizing: 1.302e-10Optimizing isometries.
+Relative truncation error in eig: 2.548e-08
+  Change in norm when optimizing: 1.286e-10Optimizing isometries.
+Relative truncation error in eig: 2.543e-08
+  Change in norm when optimizing: 1.270e-10Optimizing isometries.
+Relative truncation error in eig: 2.539e-08
+  Change in norm when optimizing: 1.256e-10Optimizing isometries.
+Relative truncation error in eig: 2.534e-08
+  Change in norm when optimizing: 1.242e-10Optimizing isometries.
+Relative truncation error in eig: 2.530e-08
+  Change in norm when optimizing: 1.229e-10Optimizing isometries.
+Relative truncation error in eig: 2.525e-08
+  Change in norm when optimizing: 1.216e-10Optimizing isometries.
+Relative truncation error in eig: 2.521e-08
+  Change in norm when optimizing: 1.204e-10Optimizing isometries.
+Relative truncation error in eig: 2.516e-08
+  Change in norm when optimizing: 1.193e-10Optimizing isometries.
+Relative truncation error in eig: 2.512e-08
+  Change in norm when optimizing: 1.182e-10Optimizing isometries.
+Relative truncation error in eig: 2.507e-08
+  Change in norm when optimizing: 1.171e-10Optimizing isometries.
+Relative truncation error in eig: 2.503e-08
+  Change in norm when optimizing: 1.161e-10Optimizing isometries.
+Relative truncation error in eig: 2.498e-08
+  Change in norm when optimizing: 1.151e-10Optimizing isometries.
+Relative truncation error in eig: 2.494e-08
+  Change in norm when optimizing: 1.142e-10Optimizing isometries.
+Relative truncation error in eig: 2.489e-08
+  Change in norm when optimizing: 1.132e-10Optimizing isometries.
+Relative truncation error in eig: 2.485e-08
+  Change in norm when optimizing: 1.123e-10Optimizing isometries.
+Relative truncation error in eig: 2.480e-08
+  Change in norm when optimizing: 1.115e-10Optimizing isometries.
+Relative truncation error in eig: 2.476e-08
+  Change in norm when optimizing: 1.106e-10Optimizing isometries.
+Relative truncation error in eig: 2.472e-08
+  Change in norm when optimizing: 1.098e-10Optimizing isometries.
+Relative truncation error in eig: 2.467e-08
+  Change in norm when optimizing: 1.090e-10Optimizing isometries.
+Relative truncation error in eig: 2.463e-08
+  Change in norm when optimizing: 1.082e-10Optimizing isometries.
+Relative truncation error in eig: 2.458e-08
+  Change in norm when optimizing: 1.075e-10Optimizing isometries.
+Relative truncation error in eig: 2.454e-08
+  Change in norm when optimizing: 1.067e-10Optimizing isometries.
+Relative truncation error in eig: 2.449e-08
+  Change in norm when optimizing: 1.060e-10Optimizing isometries.
+Relative truncation error in eig: 2.445e-08
+  Change in norm when optimizing: 1.053e-10Optimizing isometries.
+Relative truncation error in eig: 2.440e-08
+  Change in norm when optimizing: 1.046e-10Optimizing isometries.
+Relative truncation error in eig: 2.436e-08
+  Change in norm when optimizing: 1.039e-10Optimizing isometries.
+Relative truncation error in eig: 2.432e-08
+  Change in norm when optimizing: 1.033e-10Optimizing isometries.
+Relative truncation error in eig: 2.427e-08
+  Change in norm when optimizing: 1.026e-10Optimizing isometries.
+Relative truncation error in eig: 2.423e-08
+  Change in norm when optimizing: 1.020e-10Optimizing isometries.
+Relative truncation error in eig: 2.418e-08
+  Change in norm when optimizing: 1.014e-10Optimizing isometries.
+Relative truncation error in eig: 2.414e-08
+  Change in norm when optimizing: 1.008e-10Optimizing isometries.
+Relative truncation error in eig: 2.409e-08
+  Change in norm when optimizing: 1.003e-10Optimizing isometries.
+Relative truncation error in eig: 2.405e-08
+  Change in norm when optimizing: 9.971e-11Optimizing isometries.
+Relative truncation error in eig: 2.401e-08
+  Change in norm when optimizing: 9.917e-11Optimizing isometries.
+Relative truncation error in eig: 2.396e-08
+  Change in norm when optimizing: 9.863e-11Optimizing isometries.
+Relative truncation error in eig: 2.392e-08
+  Change in norm when optimizing: 9.812e-11Optimizing isometries.
+Relative truncation error in eig: 2.387e-08
+  Change in norm when optimizing: 9.762e-11Optimizing isometries.
+Relative truncation error in eig: 2.383e-08
+  Change in norm when optimizing: 9.714e-11Optimizing isometries.
+Relative truncation error in eig: 2.378e-08
+  Change in norm when optimizing: 9.666e-11Optimizing isometries.
+Relative truncation error in eig: 2.374e-08
+  Change in norm when optimizing: 9.621e-11Optimizing isometries.
+Relative truncation error in eig: 2.370e-08
+  Change in norm when optimizing: 9.576e-11Optimizing isometries.
+Relative truncation error in eig: 2.365e-08
+  Change in norm when optimizing: 9.533e-11Optimizing isometries.
+Relative truncation error in eig: 2.361e-08
+  Change in norm when optimizing: 9.491e-11Optimizing isometries.
+Relative truncation error in eig: 2.356e-08
+  Change in norm when optimizing: 9.450e-11Optimizing isometries.
+Relative truncation error in eig: 2.352e-08
+  Change in norm when optimizing: 9.411e-11Optimizing isometries.
+Relative truncation error in eig: 2.348e-08
+  Change in norm when optimizing: 9.372e-11Optimizing isometries.
+Relative truncation error in eig: 2.343e-08
+  Change in norm when optimizing: 9.335e-11Optimizing isometries.
+Relative truncation error in eig: 2.339e-08
+  Change in norm when optimizing: 9.299e-11Optimizing isometries.
+Relative truncation error in eig: 2.335e-08
+  Change in norm when optimizing: 9.264e-11Optimizing isometries.
+Relative truncation error in eig: 2.330e-08
+  Change in norm when optimizing: 9.230e-11Optimizing isometries.
+Relative truncation error in eig: 2.326e-08
+  Change in norm when optimizing: 9.197e-11Optimizing isometries.
+Relative truncation error in eig: 2.322e-08
+  Change in norm when optimizing: 9.165e-11Optimizing isometries.
+Relative truncation error in eig: 2.317e-08
+  Change in norm when optimizing: 9.134e-11Optimizing isometries.
+Relative truncation error in eig: 2.313e-08
+  Change in norm when optimizing: 9.104e-11Optimizing isometries.
+Relative truncation error in eig: 2.309e-08
+  Change in norm when optimizing: 9.074e-11Optimizing isometries.
+Relative truncation error in eig: 2.304e-08
+  Change in norm when optimizing: 9.046e-11Optimizing isometries.
+Relative truncation error in eig: 2.300e-08
+  Change in norm when optimizing: 9.019e-11Optimizing isometries.
+Relative truncation error in eig: 2.296e-08
+  Change in norm when optimizing: 8.992e-11Optimizing isometries.
+Relative truncation error in eig: 2.291e-08
+  Change in norm when optimizing: 8.966e-11Optimizing isometries.
+Relative truncation error in eig: 2.287e-08
+  Change in norm when optimizing: 8.941e-11Optimizing isometries.
+Relative truncation error in eig: 2.283e-08
+  Change in norm when optimizing: 8.916e-11Optimizing isometries.
+Relative truncation error in eig: 2.279e-08
+  Change in norm when optimizing: 8.892e-11Optimizing isometries.
+Relative truncation error in eig: 2.274e-08
+  Change in norm when optimizing: 8.868e-11Optimizing isometries.
+Relative truncation error in eig: 2.270e-08
+  Change in norm when optimizing: 8.846e-11Optimizing isometries.
+Relative truncation error in eig: 2.266e-08
+  Change in norm when optimizing: 8.823e-11Optimizing isometries.
+Relative truncation error in eig: 2.262e-08
+  Change in norm when optimizing: 8.802e-11Optimizing isometries.
+Relative truncation error in eig: 2.258e-08
+  Change in norm when optimizing: 8.781e-11Optimizing isometries.
+Relative truncation error in eig: 2.253e-08
+  Change in norm when optimizing: 8.760e-11Optimizing isometries.
+Relative truncation error in eig: 2.249e-08
+  Change in norm when optimizing: 8.740e-11Optimizing isometries.
+Relative truncation error in eig: 2.245e-08
+  Change in norm when optimizing: 8.719e-11Optimizing isometries.
+Relative truncation error in eig: 2.241e-08
+  Change in norm when optimizing: 8.700e-11Optimizing isometries.
+Relative truncation error in eig: 2.237e-08
+  Change in norm when optimizing: 8.681e-11Optimizing isometries.
+Relative truncation error in eig: 2.232e-08
+  Change in norm when optimizing: 8.662e-11Optimizing isometries.
+Relative truncation error in eig: 2.228e-08
+  Change in norm when optimizing: 8.644e-11Optimizing isometries.
+Relative truncation error in eig: 2.224e-08
+  Change in norm when optimizing: 8.625e-11Optimizing isometries.
+Relative truncation error in eig: 2.220e-08
+  Change in norm when optimizing: 8.607e-11Optimizing isometries.
+Relative truncation error in eig: 2.216e-08
+  Change in norm when optimizing: 8.589e-11Optimizing isometries.
+Relative truncation error in eig: 2.212e-08
+  Change in norm when optimizing: 8.572e-11Optimizing isometries.
+Relative truncation error in eig: 2.208e-08
+  Change in norm when optimizing: 8.554e-11Optimizing isometries.
+Relative truncation error in eig: 2.204e-08
+  Change in norm when optimizing: 8.537e-11Optimizing isometries.
+Relative truncation error in eig: 2.200e-08
+  Change in norm when optimizing: 8.519e-11Optimizing isometries.
+Relative truncation error in eig: 2.195e-08
+  Change in norm when optimizing: 8.503e-11Optimizing isometries.
+Relative truncation error in eig: 2.191e-08
+  Change in norm when optimizing: 8.485e-11Optimizing isometries.
+Relative truncation error in eig: 2.187e-08
+  Change in norm when optimizing: 8.468e-11Optimizing isometries.
+Relative truncation error in eig: 2.183e-08
+  Change in norm when optimizing: 8.451e-11Optimizing isometries.
+Relative truncation error in eig: 2.179e-08
+  Change in norm when optimizing: 8.434e-11Optimizing isometries.
+Relative truncation error in eig: 2.175e-08
+  Change in norm when optimizing: 8.418e-11Optimizing isometries.
+Relative truncation error in eig: 2.171e-08
+  Change in norm when optimizing: 8.401e-11Optimizing isometries.
+Relative truncation error in eig: 2.167e-08
+  Change in norm when optimizing: 8.384e-11Optimizing isometries.
+Relative truncation error in eig: 2.163e-08
+Program exits, elapsed time: 0:00:58.314
+Program exits, elapsed time: 0:00:58.314

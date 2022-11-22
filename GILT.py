@@ -14,7 +14,9 @@ import itertools as itt
 from dataclasses import dataclass
 def _toN(t):
     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
-from safe_svd import svd,sqrt # TODO is it necessary???
+#from safe_svd import svd,sqrt # TODO is it necessary???
+from torch.linalg import svd
+from torch import sqrt
 
 # Basic idea:
 
@@ -121,6 +123,18 @@ def GILT_getEEh(As,Ais:"list[list[str]]"):
 #    assert not u.isnan().any() and not vh.isnan().any()
 #    return u,vh
 
+def replace_leg_with_u_and_v(Ais,leg):
+    flag=False
+    for Ai in Ais:
+        if leg in Ai:
+            if not flag:
+                Ai[Ai.index(leg)]='u'
+                flag=True
+            else:
+                Ai[Ai.index(leg)]='v'
+    return Ais
+
+
 def GILT_Square_one(As,leg,options:GILT_options=GILT_options()):
     # leg: 12 for example
     # A1- -A2      A1u vA2    0
@@ -132,15 +146,10 @@ def GILT_Square_one(As,leg,options:GILT_options=GILT_options()):
         ['13',None,None,'34'],
         ['24',None,'34',None],
     ]
+    if(len(As[0].shape)==5): #it might also works for PEPS I hope
+        Ais=[Ai+[None] for Ai in Ais]
     assert leg in {'12','34','13','24'}
-    flag=False
-    for Ai in Ais:
-        if leg in Ai:
-            if not flag:
-                Ai[Ai.index(leg)]='u'
-                flag=True
-            else:
-                Ai[Ai.index(leg)]='v'
+    Ais=replace_leg_with_u_and_v(Ais,leg)
     EEh=GILT_getEEh(As,Ais)
     u,vh=GILT_getuvh(EEh,options=options)
     assert not u.isnan().any() and not vh.isnan().any()
@@ -165,37 +174,32 @@ def GILT_Cube_one(As,leg,options:GILT_options=GILT_options()):
         ['57',None,None,'78','37',None],
         ['68',None,'78',None,'48',None],
     ]
+    if(len(As[0].shape)==7): #it might also works for PEPS I hope
+        Ais=[Ai+[None] for Ai in Ais]
     assert leg in {'12','34','56','78','13','24','57','68','15','26','37','48'}
-    flag=False
-    for Ai in Ais:
-        if leg in Ai:
-            if not flag:
-                Ai[Ai.index(leg)]='u'
-                flag=True
-            else:
-                Ai[Ai.index(leg)]='v'
+    Ais=replace_leg_with_u_and_v(Ais,leg)
     EEh=GILT_getEEh(As,Ais)
     u,vh=GILT_getuvh(EEh,options=options)
     assert not u.isnan().any() and not vh.isnan().any()
     return u,vh
     
     
-    
 
 def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     #      O  | O                 
     #    /v1-T1-u1\       0       2
-    #  -w     |    w-    2T3  -> 0T'1  
-    #    \v2-T2-u2/       1       3
-    #      O  | O 
+    #  -w     |\   w-    2T3  -> 0T'1  
+    #    \v2-T2-u2/       14      34
+    #      O  |\O 
     
     #Y1,Y2=T1,T2
+    contract_path={4:'ijkl,Kk,Ll->ijKL',5:'ijkla,Kk,Ll->ijKLa'}[len(T1.shape)]
 
     u1,vh1=GILT_Square_one([T2,T2,T1,T1],leg='34',options=options)
-    T1=contract('ijkl,Kk,Ll->ijKL',T1,vh1,u1.T)
+    T1=contract(contract_path,T1,vh1,u1.T)
 
     u2,vh2=GILT_Square_one([T2,T2,T1,T1],leg='12',options=options)
-    T2=contract('ijkl,Kk,Ll->ijKL',T2,vh2,u2.T)
+    T2=contract(contract_path,T2,vh2,u2.T)
     
     I=torch.eye(T1.shape[0])
 
@@ -205,16 +209,16 @@ def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     #print((T1-Y1).norm(),(T2-Y2).norm())
     return T1,T2,gg
 
-
 def GILT_HOTRG3D_square_only(T1,T2,options:GILT_options=GILT_options()):
     #       g4|                         5--6
     #    /g1-T1-g2\      50      34     |1--2
     #  -w   g8|g3  w-    2T3  -> 0T'1   7| 8|
     #    \g5-T2-g6/       14      52     3--4
     #         |g7 
-    pass
+    raise NotImplementedError
     
 def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
+    print('not tested!')
     #       g4|                         5--6
     #    /g1-T1-g2\      50      34     |1--2
     #  -w   g8|g3  w-    2T3  -> 0T'1   7| 8|
@@ -281,7 +285,7 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
     return T1,T2,gg
 
 def GILT_HOTRG(T1,T2,options:GILT_options=GILT_options()):
-    _GILT_HOTRG={2:GILT_HOTRG2D,3:GILT_HOTRG3D}[len(T1.shape)//2]
+    _GILT_HOTRG={4:GILT_HOTRG2D,5:GILT_HOTRG2D,6:GILT_HOTRG3D}[len(T1.shape)]
     T1,T2,gg=_GILT_HOTRG(T1,T2,options=options)
     if options.record_S:
         import matplotlib.pyplot as plt

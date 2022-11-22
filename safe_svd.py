@@ -74,9 +74,20 @@ def eig(T):
 
 def inv(T):
     return torch.linalg.inv(T)
+    
+
+def split_matrix(M,max_dim=None):
+    u,s,vh=svd(M)
+    s=torch.diag(s**.5)
+    u,vh=u@s,s@vh
+    if max_dim is not None:
+        u,vh=u[:,:max_dim],vh[:max_dim,:]
+    return u,vh
 
 #torch.manual_seed(2)
 #input = torch.rand(20, 16, dtype=torch.float64, requires_grad=True)
 #assert torch.autograd.gradcheck(sqrt, input, eps=1e-6, atol=1e-4)
 
-__all__=['svd','sqrt']
+
+
+__all__=['svd','sqrt','svd_tensor']

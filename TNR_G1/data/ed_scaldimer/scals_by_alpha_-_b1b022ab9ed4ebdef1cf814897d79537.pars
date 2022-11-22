@@ -1,0 +1,17 @@
+H = 0j
+J = (1+0j)
+KW = False
+beta = 0.44068679350977147
+block_width = 12
+defect_angles = [0]
+do_eigenvectors = True
+do_momenta = True
+dtype = <class 'numpy.complex128'>
+initial2x2 = False
+initial4x4 = False
+model = ising
+n_dims_do = 12
+n_discard = 0
+n_normalization = 3
+sep_qnums = True
+symmetry_tensors = False

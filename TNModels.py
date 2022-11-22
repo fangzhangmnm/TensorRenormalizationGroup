@@ -34,6 +34,7 @@ class Ising2D(TNModel):
         W=torch.stack([torch.stack([a,b]),torch.stack([a,-b])])
         sz=torch.stack([torch.exp(beta*h),torch.exp(-beta*h)])
         return contract('Ai,Aj,Ak,Al,A->ijkl',W,W,W,W,sz)#UDLR
+
         
     def get_dimR(self,Z2=True):
         return ((1,1),)*self.spacial_dim if Z2 else ((2,0),)*self.spacial_dim
@@ -48,6 +49,20 @@ class Ising2D(TNModel):
         W=torch.stack([torch.stack([a,b]),torch.stack([a,-b])])
         sz=torch.stack([torch.exp(beta*h),-torch.exp(-beta*h)])
         return contract('Ai,Aj,Ak,Al,A->ijkl',W,W,W,W,sz)#UDLR
+
+    def get_PEPS(self):
+        beta,h=self.params['beta'],self.params['h']
+        a=torch.sqrt(torch.cosh(beta))
+        b=torch.sqrt(torch.sinh(beta))
+        W=torch.stack([torch.stack([a,b]),torch.stack([a,-b])])
+        sz=torch.stack([
+            torch.stack([torch.exp(beta*h),torch.exp(-beta*h)]),
+            torch.stack([torch.exp(beta*h),-torch.exp(-beta*h)]),
+        ])
+        return contract('Ai,Aj,Ak,Al,AB->ijklB',W,W,W,W,sz)
+        
+    def get_PEPS_dimR(self,Z2=True):
+        return ((1,1),)*(self.spacial_dim+1) if Z2 else ((2,0),)*(self.spacial_dim+1)
     
     def get_ET1(self):
         beta,h=self.params['beta'],self.params['h']

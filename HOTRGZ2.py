@@ -8,10 +8,12 @@ from collections import namedtuple
 from dataclasses import dataclass
 import math
 import numpy as np
+import copy
 def _toN(t):
     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 
-from safe_svd import svd,sqrt # TODO is it necessary???
+#from safe_svd import svd,sqrt # TODO is it necessary???
+from torch.linalg import svd
 #======================== Z2 =================================
 
 def RepDim(dimV1R1,dimV1R2,dimV2R1,dimV2R2):
@@ -39,6 +41,9 @@ def RepMat(dimV1R1,dimV1R2,dimV2R1,dimV2R2):
             P[counter,dimV1R1+i,j]=1
             counter+=1
     return P
+
+def _RepMat(a,b):
+    return RepMat(a,b,a,b)
 
 def Z2_sectors(T,dimR):
     if len(T.shape)==2*len(dimR): dimR=[d for d in dimR for _ in range(2)]
@@ -76,6 +81,12 @@ class HOTRGLayer:
     dimR_next:'tuple[tuple[int]]'=None
     gg:'list[list[torch.Tensor]]'=None
     hh:'list[list[torch.Tensor]]'=None
+    _gg1=None
+    
+    def _gg(self,iNode,iLeg):
+        if self._gg1 is None and BypassGilt.v[iNode]:
+            self.prepare_bypass_gilt()
+        return self._gg1[iNode][iLeg] if BypassGilt.v[iNode] else self.gg[iNode][iLeg]
 
     def get_isometry(self,i):
         #         h0
@@ -86,42 +97,69 @@ class HOTRGLayer:
         #         g11                      
         #         h1
         iAxis=i//2
-        if iAxis==0:
+        if iAxis==0: #first virtual leg
             w=torch.eye(self.tensor_shape[i])
             if self.gg:
-                w=self.gg[i][i]@w
+                w=self._gg(i,i)@w
             if self.hh:
                 w=self.hh[i]@w
-        else:
+        elif iAxis<len(self.tensor_shape)//2: #other virtual legs
             w=self.ww[iAxis-1]
             if self.dimR:
-                P=RepMat(self.dimR[iAxis][0],self.dimR[iAxis][1],self.dimR[iAxis][0],self.dimR[iAxis][1])
+                P=_RepMat(self.dimR[iAxis][0],self.dimR[iAxis][1])
                 w=contract('ab,bij->aij',w,P)
             else:
                 w=w.reshape(-1,self.tensor_shape[i],self.tensor_shape[i])
             if i%2==1:
                 w=w.conj()
             if self.gg:
-                w=contract('aij,iI,jJ->aIJ',w,self.gg[0][i],self.gg[1][i])
+                w=contract('aij,iI,jJ->aIJ',w,self._gg(0,i),self._gg(1,i))
             if self.hh:
                 w=contract('aij,Aa->Aij',w,self.hh[i])
+        else: #physical leg
+            w=self.ww[iAxis-1]
+            if self.dimR:
+                P=_RepMat(self.dimR[iAxis][0],self.dimR[iAxis][1])
+                w=contract('ab,bij->aij',w,P)
+            else:
+                w=w.reshape(-1,self.tensor_shape[i],self.tensor_shape[i])
         return w
     def get_insertion(self):
         if self.gg:
-            return self.gg[0][1].T@self.gg[1][0]
+            return self._gg(0,1).T@self._gg(1,0)
         else:
             return torch.eye(self.tensor_shape[0])
+    def delete_PEPS_(self):
+        if(len(self.tensor_shape)%2==0):
+            print('Warning! Theres no PEPS.')
+            return
+        self.tensor_shape=self.tensor_shape[:-1]
+        self.ww=self.ww[:-1]
+        if self.dimR:
+            self.dimR=self.dimR[:-1]
+            self.dimR_next=self.dimR_next[:-1]
+    def prepare_bypass_gilt(self):
+        self._gg1=[[to_unitary(g) for g in ggg]for ggg in self.gg]
+        
+class BypassGilt:
+    v=[False,False]
+    def __init__(self,*v):
+        self.u=v
+    def __enter__(self):
+        BypassGilt.v,self.u=self.u,BypassGilt.v
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        BypassGilt.v,self.u=self.u,BypassGilt.v
         
 
 def _forward_layer(Ta,Tb,layer:HOTRGLayer):
-    spacial_dim=len(Ta.shape)//2
     assert layer.tensor_shape==Ta.shape and layer.tensor_shape==Tb.shape
-    isometries=[layer.get_isometry(i) for i in range(2*spacial_dim)]
+    isometries=[layer.get_isometry(i) for i in range(len(layer.tensor_shape))]
     insertion=layer.get_insertion()
-    eq={2:'ijkl,Jmno,jJ,xi,ym,akn,blo->abxy',3:'ijklmn,Jopqrs,jJ,xi,yo,akp,blq,cmr,dns->abcdxy'}[spacial_dim]
+    eq={4:'ijkl,Jmno,jJ,xi,ym,akn,blo->abxy',
+        5:'ijklA,JmnoB,jJ,xi,ym,akn,blo,CAB->abxyC',
+        6:'ijklmn,Jopqrs,jJ,xi,yo,akp,blq,cmr,dns->abcdxy',
+        }[len(layer.tensor_shape)]
     T=contract(eq,Ta,Tb,insertion,*isometries)
-    #Tref=_forward_layer_2D(Ta,Tb,layer)
-    #print((T-Tref).norm())
     return T
 
 
@@ -186,20 +224,21 @@ def _checkpoint(function,args,args1,use_checkpoint=True):
         return function(*args,**args1)
     
 def forward_layer(Ta,Tb,layer:HOTRGLayer,use_checkpoint=False)->torch.Tensor:
-    _forward_layer={4:_forward_layer_2D,6:_forward_layer_3D}[len(Ta.shape)]
+    #_forward_layer={4:_forward_layer_2D,6:_forward_layer_3D}[len(Ta.shape)]
     return _checkpoint(_forward_layer,[Ta,Tb],{'layer':layer},use_checkpoint=use_checkpoint)
 
 def gauge_invariant_norm(T):
-    spacial_dim=len(T.shape)//2
-    if spacial_dim==2:
-        norm=contract('iijj->',T)
-    elif spacial_dim==3:
-        norm=contract('iijjkk->',T)
+    contract_path={4:'iijj->',5:'iijjk->k',6:'iijjkk->',7:'iijjkkl->l'}[len(T.shape)]
+    norm=contract(contract_path,T).norm()
     if norm<1e-6:#fallback
         norm=T.norm()
     #norm=T.norm()
     #print(norm)
     return norm
+    
+def to_unitary(g):
+    u,s,vh=svd(g)
+    return u@vh
     
 def forward_tensor(T0,layers:'list[HOTRGLayer]',use_checkpoint=False,return_layers=False):
     T,logTotal=T0,0
@@ -230,7 +269,9 @@ def forward_observable_tensor(T0,T0_op,layers:'list[HOTRGLayer]',
             T1=cached_Ts[ilayer+1]
         else:
             T1=forward_layer(T,T,layer=layer,use_checkpoint=use_checkpoint)
+        #with BypassGilt(False,True):
         T2=forward_layer(T,T_op,layer=layer,use_checkpoint=use_checkpoint)
+        #with BypassGilt(True,False):
         T3=forward_layer(T_op,T,layer=layer,use_checkpoint=use_checkpoint)
         T3=-T3 if (checkerboard and ilayer<spacial_dim) else T3
         T,T_op=T1,(T2+T3)/2
@@ -289,6 +330,7 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
     lattice_size=get_lattice_size(nLayers,spacial_dim=spacial_dim)
     assert all(isinstance(c,int) and 0<=c and c<s for coords in positions for c,s in zip(coords,lattice_size))
     assert all(positions[i]!=positions[j] for i,j in itt.combinations(range(len(positions)),2))
+    assert len(positions)==len(T0_ops)
     T,T_ops,logTotal=T0,T0_ops.copy(),0
     for ilayer,layer in tqdm(list(enumerate(layers)),leave=False):
         norm=gauge_invariant_norm(T)
@@ -302,6 +344,7 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
                 i,j=(i,j) if positions[i][0]%2==0 else (j,i)
                 #print(positions[i],positions[j])
                 assert positions[i][0]%2==0 and positions[j][0]%2==1
+                #with BypassGilt(True,True):
                 T_op_new=forward_layer(T_ops[i],T_ops[j],layer,use_checkpoint=use_checkpoint)
                 if checkerboard and ilayer<spacial_dim:
                     T_op_new=-T_op_new
@@ -313,8 +356,10 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
         for i in range(len(positions)):
             if i not in iRemoved:
                 if positions[i][0]%2==0:
+                    #with BypassGilt(False,True):
                     T_op_new=forward_layer(T_ops[i],T,layer,use_checkpoint=use_checkpoint)
                 else:
+                    #with BypassGilt(True,False):
                     T_op_new=forward_layer(T,T_ops[i],layer,use_checkpoint=use_checkpoint)
                     if checkerboard and ilayer<spacial_dim:
                         T_op_new=-T_op_new
@@ -326,8 +371,11 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
         else:
             T_new=forward_layer(T,T,layer=layer,use_checkpoint=use_checkpoint)
         T,T_ops,positions=T_new,T_ops_new,positions_new
-    assert len(positions)==1
-    return T,T_ops[0],logTotal
+    if len(positions)==0:
+        return T,T,logTotal
+    else:
+        assert len(positions)==1
+        return T,T_ops[0],logTotal
 
     
     
@@ -349,6 +397,12 @@ def permute_tensor_axis(T):
     Bi=Ai[2:]+Ai[:2]
     return contract(T,Ai,Bi)
 #==================
+
+import importlib
+import HOSVD,GILT,fix_gauge
+importlib.reload(HOSVD)
+importlib.reload(GILT)
+importlib.reload(fix_gauge)
 
 from HOSVD import HOSVD_layer
 from GILT import GILT_HOTRG,GILT_options
@@ -388,11 +442,11 @@ def HOTRG_layers(T0,max_dim,nLayers,
         dimR:"tuple[tuple[int]]"=None,
         options:dict={},
         return_tensors=False):    
+    print('Generating HOTRG layers')
     spacial_dim=len(T0.shape)//2
     stride=spacial_dim
     T,logTotal=T0,0
-    if return_tensors:
-        Ts,logTotals=[T],[0]
+    Ts,logTotals=[T],[0]
     layers=[]
     for iLayer in tqdm(list(range(nLayers)),leave=False):
         norm=gauge_invariant_norm(T)
@@ -408,10 +462,9 @@ def HOTRG_layers(T0,max_dim,nLayers,
             assert ((forward_layer(T_tmp,T_tmp,layer)-T).norm()<=options.get('hotrg_sanity_check_tol',1e-7))
 
         layers.append(layer)
-        if return_tensors:
-            Ts.append(T);logTotals.append(logTotal)
+        Ts.append(T);logTotals.append(logTotal)
             
-            
+    print('HOTRG layers generated')
     return (layers,Ts,logTotals) if return_tensors else layers
 
     

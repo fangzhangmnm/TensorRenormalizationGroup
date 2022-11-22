@@ -10,11 +10,11 @@ from HOTRGZ2 import gauge_invariant_norm
 def _toN(t):
     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 
-def fix_normalize(T,scaling=2,is_HOTRG=False,norms=None):
+def fix_normalize(T,norms,volume_scaling=2,is_HOTRG=False):
     if not is_HOTRG:
         # evolve(T/norm)=T
         # q T=evolve(q T)=q**scaling * norm**scaling T
-        q=norms[-1]**(scaling/(1-scaling))
+        q=norms[-1]**(volume_scaling/(1-volume_scaling))
     else:
         # evolve(...evolve(T/norms[0])/norms[1]...)=T
         # q T=evolve(...evolve(q T)...)
@@ -24,8 +24,8 @@ def fix_normalize(T,scaling=2,is_HOTRG=False,norms=None):
         norms=[norms[-1]]+norms[:-1]#why
         q=1
         for axis in range(spacial_dim):
-            q=q * norms[axis]**(scaling**(spacial_dim-axis))
-        q=q**(1/(1-scaling**spacial_dim))
+            q=q * norms[axis]**(volume_scaling**(spacial_dim-axis))
+        q=q**(1/(1-volume_scaling**spacial_dim))
     return q*T
 
 def get_transfer_matrix_spectrum_2D(T,loop_length:int=2):
@@ -63,15 +63,16 @@ def get_transfer_matrix_spectrum_3D(T,loop_length:'tuple[int]'=(1,1)):
 #    return -torch.log(spectrum/spectrum[0])/((2*torch.pi)/aspect)
 
     
-def get_center_charge(spectrum,scaling=np.exp(2*np.pi)):
+def get_central_charge(spectrum,scaling=np.exp(2*np.pi)):
     return 12*torch.log(spectrum[0])/torch.log(torch.as_tensor(scaling))
 
 def get_scaling_dimensions(spectrum,scaling=np.exp(2*np.pi)):
     return -torch.log(spectrum/spectrum[0])/torch.log(torch.as_tensor(scaling))
 
 def get_entanglement_entropy(spectrum):
-    spectrum=spectrum/torch.sum(spectrum)
-    return -torch.sum(torch.log(spectrum)*spectrum)
+    spectrum=spectrum/spectrum.sum()
+    logSpectrum=spectrum.log().nan_to_num(nan=0)
+    return -(logSpectrum*spectrum).sum()
 
 
 def get_half_circle_density_matrix(u,loop_length):
@@ -87,7 +88,7 @@ def get_half_circle_density_matrix(u,loop_length):
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None):
+def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None):
     curve=pd.DataFrame()
     
     def pad(v):
@@ -97,7 +98,7 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,is_HOTRG=False,r
 
     norms=list(map(gauge_invariant_norm,Ts))
     for iLayer,A in tqdm([*enumerate(Ts)]):
-        A=fix_normalize(A,is_HOTRG=True,norms=norms[:iLayer+1])
+        A=fix_normalize(A,is_HOTRG=is_HOTRG,volume_scaling=volume_scaling,norms=norms[:iLayer+1])
 
         if spacial_dim==2:
             if is_HOTRG:
@@ -117,7 +118,7 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,is_HOTRG=False,r
         s=s**aspect
         #print(s[:10])
 
-        center_charge=get_center_charge(s)
+        center_charge=get_central_charge(s)
         scaling_dimensions=get_scaling_dimensions(s)
         min_entropy=-torch.max(s/s.sum()).log()
         transfer_entropy=get_entanglement_entropy(s)
@@ -150,10 +151,10 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,is_HOTRG=False,r
     
     eigs=np.array(curve['eigs'].tolist()).T
     for eig in eigs:
-        plt.plot(curve['layer'],eig,'.-',color='black')
+        plt.plot(curve['layer'],eig/eigs[0],'.-',color='black')
     plt.xlabel('RG Step')
-    plt.ylabel('eigenvalues of transfer matrix')
-    plt.ylim([np.average(eigs[0])*-.1,np.average(eigs[0])*1.5])
+    plt.ylabel('eigenvalues of normalized transfer matrix')
+    plt.ylim([0,1])
     plt.show()
     
     sdsds=np.array(curve['scaling_dimensions'].tolist()).T
@@ -229,12 +230,14 @@ def show_effective_rank(Ts):
     plt.title(f'')
     plt.xlabel('RG Step')
     plt.ylabel('normalized eigenvalues')
-    #ax=plt.twinx()
-    #ax.plot(iii,ee,label='nwse')
-    #ax.plot(iii,ee1,label='nesw')
-    #plt.ylabel('effective rank')
+    plt.show()
+
+    plt.plot(iii,ee,'-k',label='nwse')
+    #plt.plot(iii,ee1,label='nesw')
+    plt.ylabel('effective rank')
     #plt.legend()
     plt.show()
+    return curve
     
 def show_diff(Ts,stride=1):
     curve=pd.DataFrame()
@@ -260,6 +263,7 @@ def show_diff(Ts,stride=1):
     plt.yscale('log')
     plt.ylim((1e-7,2))
     plt.show()
+    return curve
     
 from HOTRGZ2 import reflect_tensor_axis,permute_tensor_axis
 
@@ -282,3 +286,4 @@ def show_asymmetry(Ts):
     #plt.yscale('log')
     plt.ylim((0,1))
     plt.show()
+    return curve

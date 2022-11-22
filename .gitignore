@@ -1,2 +1,4 @@
 /longrun
 /old
+/data
+*.pkl

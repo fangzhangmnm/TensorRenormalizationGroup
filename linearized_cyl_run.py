@@ -1,12 +1,51 @@
+import argparse
+
+
+# filename='data/transfer_matrix_X16_TNR_L10'
+
+
+# options={
+#     'tensor_path':'data/tnr_X16_tensors.pkl',
+#     'iLayer':10,
+#     'max_dim':16,
+    
+#     'svd_max_iter':100,
+#     'svd_tol':1e-16,
+#     'svd_num_eigvecs':16,
+    
+#     '_version':1,
+# }
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--filename', type=str, required=True) # data/tnr_X16_L10
+parser.add_argument('--tensor_path', type=str, required=True) # data/tnr_X16_tensors.pkl
+parser.add_argument('--iLayer', type=int, required=True) # 10
+parser.add_argument('--svd_num_eigvecs', type=int, default=16)
+parser.add_argument('--version', type=int, default=1)
+parser.add_argument('--device', type=str, default='cuda:0')
+
+args=parser.parse_args()
+options=vars(args)
+
+
+print('loading library...')
+
 from opt_einsum import contract # idk why but its required to avoid bug in contract with numpy arrays
 import torch
 import numpy as np
-import os,pdb
 torch.set_default_tensor_type(torch.cuda.DoubleTensor)
-device=torch.device('cuda:1')
+
+if options['device']=='cpu':
+    torch.set_default_tensor_type(torch.DoubleTensor)
+else:  
+    torch.set_default_tensor_type(torch.cuda.DoubleTensor)
+device=torch.device(options['device'])
 torch.cuda.set_device(device)
+options.pop('device')
 
 
+import os,pdb
 from scipy.sparse.linalg import eigs,eigsh
 from linearized import mysvd, myeigh, get_linearized_cylinder,get_linearized_cylinder_np, verify_linear_operator, check_hermicity
 from ScalingDimensions import get_scaling_dimensions
@@ -20,21 +59,7 @@ from HOTRGZ2 import HOTRG_layers
 #     else:
 #         return t
 
-filename='data/transfer_matrix_X16_TNR_L10'
-
-
-options={
-    'tensor_path':'data/tnr_X16_tensors.pkl',
-    'iLayer':10,
-    'max_dim':16,
-    
-    'svd_max_iter':100,
-    'svd_tol':1e-16,
-    'svd_num_eigvecs':16,
-    
-    '_version':1,
-}
-
+filename=options['filename']
 
 if os.path.exists(filename+'_options.pkl'):
     _options=torch.load(filename+'_options.pkl',map_location=device)
@@ -47,14 +72,12 @@ if os.path.exists(filename+'_options.pkl'):
 
 torch.save(options,filename+'_options.pkl')
 print('file saved: ',filename+'_options.pkl')
+print(options)
 
 layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
 
 iLayer=options['iLayer']
 T=Ts[iLayer]
-assert T.shape[0]==options['max_dim']
-
-
 
 Mc_torch=get_linearized_cylinder(T)
 # Mc_np=get_linearized_cylinder_np(_toP(T))

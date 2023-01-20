@@ -1,0 +1,94 @@
+foo
+Response analysis in tensor space using Gilt-HOTRG start!
+Performing 14-th to 15-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 23.67
+The scaling dimensions are:
+[-0.       0.28285  1.32598  1.32598  1.48237  1.5085   1.63763  1.90561
+  1.90561  2.04147  2.04682  2.10235  2.18997  2.18997  2.19932  2.19932
+  2.22327  2.39011  2.39011  2.42703]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.1107   1.00539  1.14505  1.14505  2.01332  2.01603  2.01792
+  2.01792  2.12954  2.15664  2.16173  3.04449  3.06569  3.08207  3.10453
+  3.10453  3.10572  3.10654  3.10654]
+------------------------------------
+------------------------------------
+Performing 15-th to 16-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 20.63
+The scaling dimensions are:
+[-0.       0.05628  1.08199  1.26852  1.27118  2.0382   2.05458  2.11838
+  2.1528   2.1528   2.17681  2.30017  2.36476  2.36511  2.36511  2.37512
+  2.37512  2.40533  2.40533  2.41769]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.09751  1.01085  1.16408  1.16408  2.01851  2.02227  2.02325
+  2.02325  2.1189   2.17381  2.19956  3.05126  3.07809  3.09029  3.12427
+  3.12779  3.13693  3.13761  3.13761]
+------------------------------------
+------------------------------------
+Performing 16-th to 17-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 25.58
+The scaling dimensions are:
+[-0.       0.02129  1.36526  1.53677  1.62451  2.08169  2.08712  2.13814
+  2.14585  2.25432  2.25432  2.2557   2.28938  2.34457  2.4129   2.4129
+  2.43689  2.4409   2.4409   2.45503]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.07476  1.032    1.20681  1.20681  2.03368  2.03517  2.03742
+  2.03742  2.10633  2.21809  2.23636  3.06113  3.09038  3.11308  3.11353
+  3.13147  3.14082  3.14781  3.14781]
+------------------------------------
+------------------------------------
+Performing 17-th to 18-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 17.99
+The scaling dimensions are:
+[-0.       0.00351  1.88677  1.98502  1.99336  2.02732  2.16416  2.16416
+  2.17644  2.18073  2.21188  2.21188  2.24791  2.24894  2.43366  2.43366
+  2.55609  2.55609  2.58179  2.58179]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.04217  1.11285  1.31451  1.31572  2.08742  2.08742  2.08844
+  2.08844  2.11411  2.31389  2.31389  3.09735  3.09735  3.10854  3.11499
+  3.12281  3.12853  3.14757]
+------------------------------------
+------------------------------------
+Performing 18-th to 19-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 14.80
+The scaling dimensions are:
+[-0.       0.00003  2.04653  2.04661  2.07916  2.07933  2.10191  2.10209
+  2.22328  2.22435  2.22489  2.22494  2.27106  2.27106  2.27116  2.27116
+  2.27551  2.27557  2.30404  2.30404]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.01198  1.39166  1.60729  1.60826  2.2482   2.2807   2.28457
+  2.28695  2.28695  2.57365  2.57568  3.20474  3.21886  3.21886  3.23261
+  3.23261  3.24756  3.24756]
+------------------------------------
+------------------------------------
+Performing 19-th to 20-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.58
+The scaling dimensions are:
+[-0.       0.       2.20715  2.20719  2.44968  2.44968  2.4499   2.4499
+  2.50531  2.50581  3.15122  3.1529   3.18338  3.18338  3.18355  3.18355
+  3.35928  3.35928  3.35949  3.35949]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.00078  2.17541  2.35723  2.36168  2.80108  2.88001  2.88815
+  2.89135  2.90034  3.21647  3.23958  3.28161  3.2831   3.28598  3.28795
+  3.62669  3.63943  3.648    3.68985]
+------------------------------------
+------------------------------------
+Performing 20-th to 21-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.

@@ -1,0 +1,34 @@
+foo
+Response analysis in tensor space using Gilt-HOTRG start!
+Performing 14-th to 15-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.61
+The scaling dimensions are:
+[-0.       0.00139  1.91859  1.91865  1.95702  1.95727  1.99446  1.99461
+  2.00531  2.0066   2.01841  2.02078  2.04202  2.04213  2.07465  2.07535
+  2.16168  2.16744  2.16819  2.16819]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.01507  1.28381  1.32164  1.33922  1.34008  1.34426  1.47972
+  1.73741  2.01543  2.01643  2.08457  2.10964  2.14109  2.14167  2.14388
+  2.14909  2.15052  2.17061  2.24055]
+------------------------------------
+------------------------------------
+Performing 15-th to 16-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 2.32
+The scaling dimensions are:
+[-0.       0.0003   1.85616  1.85729  2.33041  2.34358  2.34358  2.36029
+  2.68664  2.68787  2.69259  2.69259  2.69679  2.69679  2.81322  2.82139
+  2.82446  2.82446  2.83624  2.83624]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.00055  1.29035  1.29041  1.30158  1.30159  2.05146  2.11848
+  2.6537   2.90417  2.97971  2.98579  2.99383  2.99605  3.00403  3.00636
+  3.01246  3.03077  3.06763  3.11335]
+------------------------------------
+------------------------------------
+Performing 16-th to 17-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.

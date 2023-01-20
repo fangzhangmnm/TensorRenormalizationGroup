@@ -3,24 +3,25 @@ import torch
 import os
 
 torch.set_default_tensor_type(torch.cuda.DoubleTensor)
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 
 from TNR import TNR_layers
 from TNModels import Ising2D
 
 
 
-filename='data/tnr_X24'
+filename='data/tnr_X16_fast'
 
 
 params=Ising2D.get_default_params()
 
 options={
     'nLayers':10,
-    'tnr_max_dim_TRG':24,
-    'tnr_max_dim_TNR':12,
-    'tnr_max_nIter':100,
+    'tnr_max_dim_TRG':16,
+    'tnr_max_dim_TNR':8,
+    'tnr_max_nIter':0,
     'tnr_threshold_TTdiff':1e-7,
+    'tnr_disentangling_method':'fast',
     'mcf_enabled':True,
     'mcf_eps':1e-6,
     'mcf_max_iter':200,

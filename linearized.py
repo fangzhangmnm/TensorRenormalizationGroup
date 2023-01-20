@@ -1,11 +1,29 @@
+from opt_einsum import contract # idk why but its required to avoid bug in contract with numpy arrays
+import torch
 import numpy as np
 from tqdm.auto import tqdm
 import scipy.sparse.linalg
-from scipy.sparse.linalg import LinearOperator,aslinearoperator
+from scipy.sparse.linalg import LinearOperator,aslinearoperator,eigs
 from functorch import jvp,vjp
 from math import prod
 import torch
 from opt_einsum import contract
+
+def _toN(t):
+    if isinstance(t,list):
+        return [_toN(tt) for tt in t]
+    elif isinstance(t,torch.Tensor):
+        return t.detach().cpu().tolist()
+    else:
+        return t
+    
+def _toP(t):
+    if isinstance(t,list):
+        return [_toP(tt) for tt in t]
+    elif isinstance(t,torch.Tensor):
+        return t.detach().cpu().numpy()
+    else:
+        return t
 
 
 def mysvd(M,k=10,tol=0,maxiter=500):
@@ -89,135 +107,7 @@ def myeigh(M,k=10,tol=0,maxiter=500,impose_hermitian=True):
 #print(np.linalg.norm(u@np.diag(s)@vh-M))
 
 
-#======== HOTRG ============
-
-from HOTRGZ2 import forward_layer, HOTRG_layer
-
-
-def get_linearized_cylinder(T0):
-    dimT=prod(T0.shape)
-    pbar=tqdm()
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def matvec(v):
-        return contract('iIab,jJbc,kKcd,lLda,IJKL->ijkl',T0,T0,T0,T0,v.reshape(T0.shape)).reshape(-1)
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def rmatvec(u):
-        return contract('iIab,jJbc,kKcd,lLda,ijkl->IJKL',T0,T0,T0,T0,u.conj().reshape(T0.shape)).conj().reshape(-1)
-    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
-
-def get_linearized_HOTRG_autodiff(T0,layers):
-    dimT=prod(T0.shape)
-    pbar=tqdm()
-    print(f'dimension: {dimT}x{dimT}')
-    def forward_layers(v):
-        v=v.reshape(T0.shape)
-        for layer in layers:
-            v=forward_layer(v,v,layer)
-        return v.reshape(-1)
-    v0=T0.reshape(-1)
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def matvec(v):
-        # https://pytorch.org/functorch/nightly/generated/functorch.jvp.html
-        _,u=jvp(forward_layers,primals=(v0,),tangents=(v,))
-        return u
-
-    # https://pytorch.org/functorch/stable/generated/functorch.vjp.html
-    _,vjpfunc=vjp(forward_layers,v0)
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def rmatvec(u):
-        v=vjpfunc(u)[0]
-        return v
-    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
-
-def get_linearized_HOTRG_full_autodiff(T0,options):
-    dimT=prod(T0.shape)
-    pbar=tqdm()
-    print(f'dimension: {dimT}x{dimT}')
-    def forward_layers(v):
-        v=v.reshape(T0.shape)
-        for i in range(len(T0.shape)//2):
-            v,_=HOTRG_layer(v,v,max_dim=T0.shape[0],options=options,Tref=v)
-        return v.reshape(-1)
-    v0=T0.reshape(-1)
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def matvec(v):
-        # https://pytorch.org/functorch/nightly/generated/functorch.jvp.html
-        _,u=jvp(forward_layers,primals=(v0,),tangents=(v,))
-        return u
-    # https://pytorch.org/functorch/stable/generated/functorch.vjp.html
-    _,vjpfunc=vjp(forward_layers,v0)
-    @wrap_pbar(pbar)
-    @wrap_for_LinearOperator
-    def rmatvec(u):
-        v=vjpfunc(u)[0]
-        return v
-    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
-
-def verify_linear_operator(M,tol=1e-9,nTests=20):
-    print('checking linearity of M')
-    for i in range(nTests):
-        v=np.random.randn(M.shape[1])
-        Mv=M._matvec(v)
-        M2v=M._matvec(2*v)
-        assert np.linalg.norm(2*Mv-M2v)<max(tol,tol*np.linalg.norm(M2v))
-
-    print('checking linearity of M^H')
-    for i in range(nTests):
-        u=np.random.randn(M.shape[0])
-        MHu=M._rmatvec(u)
-        MH2u=M._rmatvec(2*u)
-        assert np.linalg.norm(2*MHu-MH2u)<max(tol,tol*np.linalg.norm(MH2u))
-
-    print('checking if M^H is the hermitian conjugate of M')
-    for i in range(nTests):
-        u=np.random.randn(M.shape[0])
-        v=np.random.randn(M.shape[1])
-        uMv=u.conj()@M._matvec(v)
-        vHMHuH=v.conj()@M._rmatvec(u)
-        assert (np.abs(uMv-vHMHuH.conj())<max(tol,tol*np.abs(uMv)))
-
-    print('checking symmetric of M^H M')
-    for i in range(nTests):
-        u=np.random.randn(M.shape[0])
-        v=np.random.randn(M.shape[0])
-        uHMHMv=u.conj()@M._rmatvec(M._matvec(v))
-        vHMHMu=v.conj()@M._rmatvec(M._matvec(u))
-        assert (np.abs(uHMHMv-vHMHMu)<max(tol,tol*np.abs(vHMHMu)))
-
-    print('checking symmetric of M M^H')
-    for i in range(nTests):
-        u=np.random.randn(M.shape[1])
-        v=np.random.randn(M.shape[1])
-        uHMMHv=u.conj()@M._matvec(M._rmatvec(v))
-        vHMMHu=v.conj()@M._matvec(M._rmatvec(u))
-        assert (np.abs(uHMMHv-vHMMHu)<max(tol,tol*np.abs(uHMMHv)))
-
-    print('verification success')
-    return True
-
-def check_hermicity(M,tol=1e-9,nTests=20):
-    assert M.shape[0]==M.shape[1]
-    print('checking hermicity')
-    for i in range(nTests):
-        u=np.random.randn(M.shape[0])
-        v=np.random.randn(M.shape[1])
-        uMv=u@M._matvec(v)
-        uMHv=u@M._rmatvec(v)
-        error=np.abs(uMv-uMHv)
-        if (np.abs(uMv-uMHv)>=max(tol,tol*np.abs(uMv))):
-            print('hermicity is False')
-            print('error is ',error,' / ',np.abs(uMv))
-            return False
-    print('hermicity is True')
-    return True
-
-
-def wrap_for_LinearOperator(func):
+def wrap_pytorch(func):
     def _wrapper(v_numpy):
         assert len(v_numpy.shape)==1 or (len(v_numpy.shape)==2 and v_numpy.shape[1]==1)
         v_torch=torch.tensor(v_numpy).reshape(-1)
@@ -238,3 +128,184 @@ def wrap_pbar(pbar):
             return rtvals
         return _wrapper
     return _decorator
+    
+    
+from HOTRGZ2 import forward_layer, HOTRG_layer
+
+
+def get_linearized_cylinder_np(T0):
+    assert isinstance(T0,np.ndarray)
+    dimT=prod(T0.shape)
+    pbar=tqdm()
+    @wrap_pbar(pbar)
+    def matvec(v):
+        # print('np')
+        # print('v',v[:10])
+        # print('T0',T0.reshape(-1)[:10])
+        v1=contract('iIab,jJbc,kKcd,lLda,IJKL->ijkl',T0,T0,T0,T0,v.reshape(T0.shape)).reshape(-1)
+        # print('v1',v1[:10])
+        return v1
+    @wrap_pbar(pbar)
+    def rmatvec(u):
+        return contract('iIab,jJbc,kKcd,lLda,ijkl->IJKL',T0,T0,T0,T0,u.conj().reshape(T0.shape)).conj().reshape(-1)
+    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
+
+
+def get_linearized_cylinder(T0):
+    dimT=prod(T0.shape)
+    pbar=tqdm()
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def matvec(v):
+        # print('torch')
+        # print('v',v[:10])
+        # print('T0',T0.reshape(-1)[:10])
+        v1=contract('iIab,jJbc,kKcd,lLda,IJKL->ijkl',T0,T0,T0,T0,v.reshape(T0.shape)).reshape(-1)
+        # print('v1',v1[:10])
+        return v1
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def rmatvec(u):
+        return contract('iIab,jJbc,kKcd,lLda,ijkl->IJKL',T0,T0,T0,T0,u.conj().reshape(T0.shape)).conj().reshape(-1)
+    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
+    
+import jax
+from copy import deepcopy
+
+def get_linearized_HOTRG_autodiff_jax(T0,layers):
+    dimT=prod(T0.shape)
+    T0=_toP(T0)
+    layers=deepcopy(layers)
+    for layer in layers:
+        if layer.ww: layer.ww=_toP(layer.ww)
+        if layer.gg: layer.gg=_toP(layer.gg)
+        if layer.hh: layer.hh=_toP(layer.hh)
+    pbar=tqdm()
+    print(f'dimension: {dimT}x{dimT}')
+    @wrap_pbar(pbar)
+    def forward_layers(v):
+        v=v.reshape(T0.shape)
+        for layer in layers:
+            v=forward_layer(v,v,layer)
+        return v.reshape(-1)
+    v0=T0.reshape(-1)
+    
+    v1, M = jax.linearize(forward_layers, v0)
+    return LinearOperator(shape=(dimT,dimT),matvec=M)
+
+
+
+from functorch import jvp,vjp
+
+
+
+
+def get_linearized_HOTRG_autodiff(T0,layers):
+    dimT=prod(T0.shape)
+    pbar=tqdm()
+    print(f'dimension: {dimT}x{dimT}')
+    def forward_layers(v):
+        v=v.reshape(T0.shape)
+        for layer in layers:
+            v=forward_layer(v,v,layer)
+        return v.reshape(-1)
+    v0=T0.reshape(-1)
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def matvec(v):
+        # https://pytorch.org/functorch/nightly/generated/functorch.jvp.html
+        _,u=jvp(forward_layers,primals=(v0,),tangents=(v,))
+        return u
+
+    # https://pytorch.org/functorch/stable/generated/functorch.vjp.html
+    _,vjpfunc=vjp(forward_layers,v0)
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def rmatvec(u):
+        v=vjpfunc(u)[0]
+        return v
+    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
+
+def get_linearized_HOTRG_full_autodiff(T0,options):
+    dimT=prod(T0.shape)
+    pbar=tqdm()
+    print(f'dimension: {dimT}x{dimT}')
+    def forward_layers(v):
+        v=v.reshape(T0.shape)
+        for i in range(len(T0.shape)//2):
+            v,_=HOTRG_layer(v,v,max_dim=T0.shape[0],options=options,Tref=v)
+        return v.reshape(-1)
+    v0=T0.reshape(-1)
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def matvec(v):
+        # https://pytorch.org/functorch/nightly/generated/functorch.jvp.html
+        _,u=jvp(forward_layers,primals=(v0,),tangents=(v,))
+        return u
+    # https://pytorch.org/functorch/stable/generated/functorch.vjp.html
+    _,vjpfunc=vjp(forward_layers,v0)
+    @wrap_pbar(pbar)
+    @wrap_pytorch
+    def rmatvec(u):
+        v=vjpfunc(u)[0]
+        return v
+    return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
+
+def verify_linear_operator(M,tol=1e-9,nTests=20):
+    print('checking linearity of M with tol=',tol)
+    for i in range(nTests):
+        v=np.random.randn(M.shape[1])
+        Mv=M._matvec(v)
+        M2v=M._matvec(2*v)
+        assert np.linalg.norm(2*Mv-M2v)<max(tol,tol*np.linalg.norm(M2v))
+
+    print('checking linearity of M^H with tol=',tol)
+    for i in range(nTests):
+        u=np.random.randn(M.shape[0])
+        MHu=M._rmatvec(u)
+        MH2u=M._rmatvec(2*u)
+        assert np.linalg.norm(2*MHu-MH2u)<max(tol,tol*np.linalg.norm(MH2u))
+
+    print('checking if M^H is the hermitian conjugate of M with tol=',tol)
+    for i in range(nTests):
+        u=np.random.randn(M.shape[0])
+        v=np.random.randn(M.shape[1])
+        uMv=u.conj()@M._matvec(v)
+        vHMHuH=v.conj()@M._rmatvec(u)
+        assert (np.abs(uMv-vHMHuH.conj())<max(tol,tol*np.abs(uMv)))
+
+    print('checking symmetric of M^H M with tol=',tol)
+    for i in range(nTests):
+        u=np.random.randn(M.shape[0])
+        v=np.random.randn(M.shape[0])
+        uHMHMv=u.conj()@M._rmatvec(M._matvec(v))
+        vHMHMu=v.conj()@M._rmatvec(M._matvec(u))
+        assert (np.abs(uHMHMv-vHMHMu)<max(tol,tol*np.abs(vHMHMu)))
+
+    print('checking symmetric of M M^H with tol=',tol)
+    for i in range(nTests):
+        u=np.random.randn(M.shape[1])
+        v=np.random.randn(M.shape[1])
+        uHMMHv=u.conj()@M._matvec(M._rmatvec(v))
+        vHMMHu=v.conj()@M._matvec(M._rmatvec(u))
+        assert (np.abs(uHMMHv-vHMMHu)<max(tol,tol*np.abs(uHMMHv)))
+
+    print('verification success')
+    return True
+
+def check_hermicity(M,tol=1e-9,nTests=20):
+    assert M.shape[0]==M.shape[1]
+    print('checking hermicity with tol=',tol)
+    for i in range(nTests):
+        u=np.random.randn(M.shape[0])
+        v=np.random.randn(M.shape[1])
+        uMv=u@M._matvec(v)
+        uMHv=u@M._rmatvec(v)
+        error=np.abs(uMv-uMHv)
+        print('error is ',error,' / ',np.abs(uMv))
+        if (np.abs(uMv-uMHv)>=max(tol,tol*np.abs(uMv))):
+            print('hermicity is False')
+            return False
+    print('hermicity is True')
+    return True
+

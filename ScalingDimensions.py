@@ -89,7 +89,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None):
-    curve=pd.DataFrame()
+    curve=[]
     
     def pad(v):
         return np.pad(_toN(v),(0,num_scaling_dims))[:num_scaling_dims]
@@ -142,8 +142,9 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
                 'norm':norms[iLayer]}
         newRow={k:_toN(v) for k,v in newRow.items()}
                 
-        curve=curve.append(newRow,ignore_index=True)
+        curve.append(newRow)
 
+    curve=pd.DataFrame(curve)
     #plt.plot(curve['layer'],curve['norm'],'.-',color='black')
     #plt.xlabel('RG Step')
     #plt.ylabel('norm of tensor')
@@ -204,7 +205,7 @@ def effective_rank(M):
     return torch.exp(entropy)
 
 def show_effective_rank(Ts):
-    curve=pd.DataFrame()
+    curve=[]
 
     for i,A in tqdm([*enumerate(Ts)]):
         _,s,_=torch.linalg.svd(NWSE(A))
@@ -219,7 +220,8 @@ def show_effective_rank(Ts):
         newRow={'layer':i,'entanglement_spectrum':s,'effective_rank_nwse':er,'effective_rank_nesw':er1}
         
         newRow={k:_toN(v) for k,v in newRow.items()}
-        curve=curve.append(newRow,ignore_index=True)
+        curve.append(newRow)
+    curve=pd.DataFrame(curve)
 
     ss=np.array(curve['entanglement_spectrum'].tolist())
     ee=curve['effective_rank_nwse'].tolist()
@@ -240,7 +242,7 @@ def show_effective_rank(Ts):
     return curve
     
 def show_diff(Ts,stride=1):
-    curve=pd.DataFrame()
+    curve=[]
 
     for i,A in tqdm([*enumerate(Ts)]):
         newRow={'layer':i}
@@ -252,8 +254,8 @@ def show_diff(Ts,stride=1):
             #    print(i)
                 
         newRow={k:_toN(v) for k,v in newRow.items()}
-        curve=curve.append(newRow,ignore_index=True)
-
+        curve.append(newRow)
+    curve=pd.DataFrame(curve)
     plt.plot(curve['layer'],curve['diff'],'.-',color='black',label='$|T\'-T|$')
     #plt.plot(curve['layer'],curve['diff1'],'.-',label='diff1')
     #plt.plot(curve['layer'],curve['diff2'],'.-',label='diff2')
@@ -268,7 +270,7 @@ def show_diff(Ts,stride=1):
 from HOTRGZ2 import reflect_tensor_axis,permute_tensor_axis
 
 def show_asymmetry(Ts):
-    curve=pd.DataFrame()
+    curve=[]
     for i,A in enumerate(Ts):
         newRow={'layer':i}
         Arot=permute_tensor_axis(A)
@@ -277,7 +279,9 @@ def show_asymmetry(Ts):
             newRow['asym_rot']=_toN((Arot-A).norm()/A.norm())
         newRow['asym_ref']=_toN((Aref-A).norm()/A.norm())
         newRow={k:_toN(v) for k,v in newRow.items()}
-        curve=curve.append(newRow,ignore_index=True)
+        curve.append(newRow)
+
+    curve=pd.DataFrame(curve)
     plt.plot(curve['layer'],curve['asym_rot'],'.-',label='rotation')
     plt.plot(curve['layer'],curve['asym_ref'],'x-',label='reflection')
     plt.legend()

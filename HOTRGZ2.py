@@ -9,8 +9,22 @@ from dataclasses import dataclass
 import math
 import numpy as np
 import copy
+
 def _toN(t):
-    return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
+    if isinstance(t,list):
+        return [_toN(tt) for tt in t]
+    elif isinstance(t,torch.Tensor):
+        return t.detach().cpu().tolist()
+    else:
+        return t
+    
+def _toP(t):
+    if isinstance(t,list):
+        return [_toP(tt) for tt in t]
+    elif isinstance(t,torch.Tensor):
+        return t.detach().cpu().numpy()
+    else:
+        return t
 
 #from safe_svd import svd,sqrt # TODO is it necessary???
 from torch.linalg import svd
@@ -73,6 +87,10 @@ def project_Z2(T,dimR,weights=[1,0],tolerance=float('inf')):
 
 #============================= Forward Layers ======================================
 
+def is_isometry(g):
+    return torch.isclose(g@g.T.conj(),torch.eye(g.shape[0])).all()
+
+
 @dataclass
 class HOTRGLayer:
     tensor_shape:'tuple(int)'
@@ -84,9 +102,26 @@ class HOTRGLayer:
     _gg1=None
     
     def _gg(self,iNode,iLeg):
-        if self._gg1 is None and BypassGilt.v[iNode]:
-            self.prepare_bypass_gilt()
-        return self._gg1[iNode][iLeg] if BypassGilt.v[iNode] else self.gg[iNode][iLeg]
+        # if self._gg1 is None and BypassGilt.v[iNode]:
+        #     self.prepare_bypass_gilt()
+        # return self._gg1[iNode][iLeg] if BypassGilt.v[iNode] else self.gg[iNode][iLeg]
+        return self.gg[iNode][iLeg]
+
+    def make_gg_isometric(self):
+        if self.gg is None: return
+        def make_isometric(g):
+            u,s,vh=svd(g)
+            g=u@vh
+            assert is_isometry(g)
+            return g
+        for i in range(len(self.gg)):
+            for j in range(0,len(self.gg[i]),2):
+                self.gg[i][j]=make_isometric(self.gg[i][j])
+                # self.gg[i][j+1]=make_isometric(self.gg[i][j+1])
+                self.gg[i][j+1]=self.gg[i][j].conj() # not quite correct, since w depends on g[i][j+1], but we erased it
+                assert torch.isclose(self.gg[i][j]@self.gg[i][j+1].T.conj(),torch.eye(self.gg[i][j].shape[0])).all()
+        # self.gg=[[make_isometric(g) for g in gg] for gg in self.gg]
+        # self.gg=None
 
     def get_isometry(self,i):
         #         h0
@@ -138,17 +173,17 @@ class HOTRGLayer:
         if self.dimR:
             self.dimR=self.dimR[:-1]
             self.dimR_next=self.dimR_next[:-1]
-    def prepare_bypass_gilt(self):
-        self._gg1=[[to_unitary(g) for g in ggg]for ggg in self.gg]
+    # def prepare_bypass_gilt(self):
+    #     self._gg1=[[to_unitary(g) for g in ggg]for ggg in self.gg]
         
-class BypassGilt:
-    v=[False,False]
-    def __init__(self,*v):
-        self.u=v
-    def __enter__(self):
-        BypassGilt.v,self.u=self.u,BypassGilt.v
-    def __exit__(self, exc_type, exc_value, exc_tb):
-        BypassGilt.v,self.u=self.u,BypassGilt.v
+# class BypassGilt:
+#     v=[False,False]
+#     def __init__(self,*v):
+#         self.u=v
+#     def __enter__(self):
+#         BypassGilt.v,self.u=self.u,BypassGilt.v
+#     def __exit__(self, exc_type, exc_value, exc_tb):
+#         BypassGilt.v,self.u=self.u,BypassGilt.v
         
 
 def _forward_layer(Ta,Tb,layer:HOTRGLayer):
@@ -411,6 +446,7 @@ from fix_gauge import minimal_canonical_form,fix_unitary_gauge,fix_phase,MCF_opt
 
 
 def HOTRG_layer(T1,T2,max_dim,dimR=None,options:dict={},Tref=None):
+    T1old,T2old=T1,T2
     gilt_options=GILT_options(**{k[5:]:v for k,v in options.items() if k[:5]=='gilt_'})
     mcf_options=MCF_options(**{k[4:]:v for k,v in options.items() if k[:4]=='mcf_'})
     if options.get('gilt_enabled',False):
@@ -421,6 +457,10 @@ def HOTRG_layer(T1,T2,max_dim,dimR=None,options:dict={},Tref=None):
     
     Tn,layer=HOSVD_layer(T1,T2,max_dim=max_dim,dimR=dimR)
     layer.gg=gg
+
+    if options.get('gilt_make_isometric',False):
+        layer.make_gg_isometric()
+        Tn= forward_layer(T1old,T2old,layer)
     
     if options.get('mcf_enabled',False):
         assert not dimR
@@ -454,12 +494,12 @@ def HOTRG_layers(T0,max_dim,nLayers,
         logTotal=2*(logTotal+norm.log())
         
         Tref=Ts[iLayer+1-stride] if iLayer+1-stride>=0 else None
+        Told=T
         T,layer=HOTRG_layer(T,T,max_dim=max_dim,dimR=dimR,Tref=Tref,options=options)
         dimR=layer.dimR_next
         
         if options.get('hotrg_sanity_check',False):
-            T_tmp=Ts[-1]/gauge_invariant_norm(Ts[-1])
-            assert ((forward_layer(T_tmp,T_tmp,layer)-T).norm()<=options.get('hotrg_sanity_check_tol',1e-7))
+            assert ((forward_layer(Told,Told,layer)-T).norm()/T.norm()<=options.get('hotrg_sanity_check_tol',1e-7))
 
         layers.append(layer)
         Ts.append(T);logTotals.append(logTotal)

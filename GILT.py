@@ -34,11 +34,6 @@ if torch.get_default_dtype() not in {torch.float64}:
     print('[GILT] Warning! float32 is not precise enough, leads to bad RG behavior')
 
 
-def Split_Matrix(Q):
-    u,s,vh=svd(Q) # is it necessary to split?
-    s=sqrt(s).diag()
-    return u@s,s@vh
-
 @dataclass
 class GILT_options:
     enabled:bool=True
@@ -49,6 +44,7 @@ class GILT_options:
     HOTRG_3D_method:str='square_only'
     fix_gauge:bool=True
     record_S:bool=False
+    make_isometric:bool=False
 
 recorded_S=[]
     
@@ -69,12 +65,9 @@ def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
         t=t*(Sn**2/(Sn**2+options.eps**2))
         Q=contract('abc,c->ab',U,t)
         if options.split_insertion:
-            #from utils import show_matrix,show_hist,plt
-            #show_matrix(Q);plt.show()
-            #show_matrix(Q@Q);plt.show()
-            #show_hist(svd(Q)[1].numpy());plt.show()
-            
-            u,vh=Split_Matrix(Q)
+            u,s,vh=svd(Q) # is it necessary to split?
+            s=sqrt(s).diag()
+            u,vh=u@s,s@vh
         else:
             # not make sense, introduces numerical error!
             u,vh=Q,torch.eye(d)

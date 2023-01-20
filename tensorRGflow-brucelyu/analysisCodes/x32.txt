@@ -1,0 +1,312 @@
+WARNING:jax._src.lib.xla_bridge:No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+foo
+Response analysis in tensor space using Gilt-HOTRG start!
+Performing 5-th to 6-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.56
+The scaling dimensions are:
+[-0.       0.12699  1.02891  1.14468  1.15158  2.01097  2.01746  2.0656
+  2.06656  2.14139  2.16432  2.2532   2.33141  2.33141  2.5245   2.58403
+  2.64359  2.76761  2.77682  2.9326 ]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12512  1.00646  1.13069  1.1318   2.01715  2.0202   2.02682
+  2.03499  2.13274  2.15809  2.17726  2.93044  3.01137  3.01561  3.02026
+  3.02108  3.02981  3.05284  3.14783]
+------------------------------------
+------------------------------------
+Performing 6-th to 7-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.28
+The scaling dimensions are:
+[-0.       0.12647  1.02706  1.14298  1.15013  2.00642  2.01311  2.06844
+  2.07224  2.13945  2.16944  2.25155  2.31598  2.33414  2.52456  2.5886
+  2.62718  2.77093  2.80165  2.92343]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12507  1.0064   1.13052  1.1318   2.01622  2.02011  2.02826
+  2.03559  2.12488  2.15956  2.18285  2.88983  2.97313  2.97783  2.97923
+  2.99177  3.00134  3.04001  3.07179]
+------------------------------------
+------------------------------------
+Performing 7-th to 8-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.39
+The scaling dimensions are:
+[-0.       0.12607  1.0259   1.14207  1.14928  2.0038   2.01058  2.06929
+  2.0763   2.14023  2.1731   2.25201  2.30723  2.33464  2.52399  2.59213
+  2.61914  2.77785  2.83012  2.89483]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12502  1.00605  1.13017  1.1315   2.01538  2.0198   2.0283
+  2.03578  2.1208   2.15966  2.18579  2.8672   2.94519  2.95097  2.95694
+  2.97342  2.99301  3.03255  3.04577]
+------------------------------------
+------------------------------------
+Performing 8-th to 9-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.26
+The scaling dimensions are:
+[-0.       0.12583  1.02522  1.14156  1.14875  2.00234  2.0091   2.06953
+  2.07838  2.14082  2.17519  2.25228  2.30203  2.33384  2.52274  2.5944
+  2.6142   2.78457  2.8555   2.87851]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12497  1.00556  1.12969  1.13101  2.01445  2.01921  2.0277
+  2.03549  2.1184   2.15909  2.18693  2.85476  2.92557  2.93968  2.94351
+  2.96348  2.98729  3.0279   3.03458]
+------------------------------------
+------------------------------------
+Performing 9-th to 10-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.21
+The scaling dimensions are:
+[-0.       0.12578  1.02482  1.14118  1.14834  2.00149  2.00824  2.06953
+  2.07931  2.14122  2.17634  2.25242  2.29885  2.33292  2.52147  2.59613
+  2.61116  2.78982  2.86926  2.87836]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12494  1.00501  1.12909  1.13039  2.01342  2.01834  2.02673
+  2.03475  2.11674  2.15813  2.18678  2.84775  2.91546  2.93373  2.93599
+  2.95806  2.98357  3.02482  3.02886]
+------------------------------------
+------------------------------------
+Performing 10-th to 11-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 6.09
+The scaling dimensions are:
+[-0.       0.12592  1.02458  1.14077  1.1479   2.00096  2.00772  2.06944
+  2.07946  2.14144  2.17668  2.25259  2.29691  2.33216  2.52046  2.59738
+  2.60896  2.79355  2.86326  2.89908]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12495  1.00443  1.12841  1.12968  2.01235  2.01733  2.02565
+  2.0338   2.11535  2.15707  2.18598  2.84398  2.91024  2.93033  2.93185
+  2.95475  2.98102  3.02249  3.02549]
+------------------------------------
+------------------------------------
+Performing 11-th to 12-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.80
+The scaling dimensions are:
+[-0.       0.12635  1.02442  1.14012  1.14722  2.00062  2.00738  2.06922
+  2.07904  2.1414   2.17661  2.25275  2.29604  2.3318   2.52026  2.59869
+  2.60704  2.79581  2.8594   2.9087 ]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12505  1.00386  1.12763  1.12887  2.01125  2.01625  2.02454
+  2.03275  2.11402  2.15604  2.18479  2.84196  2.90729  2.92828  2.92948
+  2.95258  2.9791   3.02058  3.02329]
+------------------------------------
+------------------------------------
+Performing 12-th to 13-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.92
+The scaling dimensions are:
+[-0.       0.12737  1.0248   1.13894  1.14612  2.00033  2.00722  2.06868
+  2.07683  2.14282  2.1759   2.25395  2.29485  2.33276  2.52173  2.60045
+  2.60708  2.79426  2.85781  2.88585]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12532  1.00328  1.12666  1.12788  2.01014  2.01512  2.02337
+  2.03161  2.11257  2.15513  2.18326  2.84063  2.90622  2.92686  2.9281
+  2.95101  2.97777  3.01893  3.02159]
+------------------------------------
+------------------------------------
+Performing 13-th to 14-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.94
+The scaling dimensions are:
+[-0.       0.12928  1.0243   1.1367   1.14368  2.00002  2.00689  2.0681
+  2.07451  2.14052  2.17429  2.25408  2.29519  2.33137  2.52235  2.60231
+  2.60242  2.79439  2.85426  2.90679]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12593  1.00272  1.12537  1.12655  2.00904  2.01399  2.02222
+  2.03049  2.11086  2.15458  2.18134  2.8401   2.90578  2.92578  2.92731
+  2.94963  2.97667  3.01743  3.02028]
+------------------------------------
+------------------------------------
+Performing 14-th to 15-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.55
+The scaling dimensions are:
+[-0.       0.13329  1.02454  1.13235  1.13922  1.9996   2.00666  2.06674
+  2.0682   2.13966  2.17124  2.25628  2.29506  2.33121  2.52596  2.59846
+  2.60616  2.78977  2.85063  2.90744]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12723  1.00219  1.12341  1.12457  2.00796  2.0129   2.02111
+  2.0294   2.10852  2.15472  2.17875  2.83983  2.9057   2.92472  2.9267
+  2.94808  2.9758   3.01609  3.01912]
+------------------------------------
+------------------------------------
+Performing 15-th to 16-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 5.01
+The scaling dimensions are:
+[-0.       0.14157  1.02582  1.12407  1.13076  1.99922  2.00677  2.05563
+  2.06439  2.13849  2.16548  2.26088  2.29585  2.3314   2.53345  2.59169
+  2.61321  2.7814   2.84429  2.90802]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.12992  1.0018   1.12017  1.1213   2.00697  2.0119   2.02008
+  2.02839  2.10494  2.15629  2.17489  2.8398   2.90591  2.92332  2.9261
+  2.94597  2.97528  3.01493  3.01805]
+------------------------------------
+------------------------------------
+Performing 16-th to 17-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.75
+The scaling dimensions are:
+[-0.       0.15906  1.03153  1.10929  1.11557  2.00018  2.00916  2.03107
+  2.06105  2.13796  2.155    2.2686   2.29981  2.33441  2.54782  2.57872
+  2.62517  2.76912  2.83343  2.88173]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.1355   1.00191  1.11451  1.11563  2.00632  2.01126  2.01937
+  2.02772  2.09899  2.16065  2.16892  2.84003  2.9069   2.92113  2.92547
+  2.94265  2.97563  3.0143   3.0172 ]
+------------------------------------
+------------------------------------
+Performing 17-th to 18-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.47
+The scaling dimensions are:
+[-0.       0.19759  1.05489  1.08652  1.09177  1.9864   2.0082   2.02245
+  2.06015  2.13651  2.14282  2.27361  2.30846  2.36421  2.5532   2.57106
+  2.63796  2.76647  2.82122  2.85223]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.14721  1.00412  1.10464  1.10577  2.00707  2.01212  2.02008
+  2.02851  2.08883  2.15713  2.17367  2.84203  2.90948  2.91761  2.92539
+  2.93726  2.97823  3.01533  3.01749]
+------------------------------------
+------------------------------------
+Performing 18-th to 19-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.57
+The scaling dimensions are:
+[-0.       0.28648  1.0658   1.06773  1.14439  1.91758  2.03822  2.08439
+  2.08439  2.10775  2.16948  2.27559  2.30785  2.50164  2.50164  2.57846
+  2.65562  2.78914  2.81731  2.85337]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.17262  1.01464  1.08882  1.09003  2.01335  2.01866  2.02632
+  2.03492  2.07224  2.13963  2.20335  2.84924  2.91215  2.91835  2.92821
+  2.92907  2.98792  3.02229  3.02234]
+------------------------------------
+------------------------------------
+Performing 19-th to 20-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+finished! Time elapsed = 4.01
+The scaling dimensions are:
+[-0.       0.49041  1.08348  1.10388  1.43096  1.85776  2.06995  2.08609
+  2.22933  2.25041  2.25041  2.27649  2.3187   2.42313  2.56976  2.64302
+  2.71732  2.81639  2.82438  2.82446]
+------------------------------------
+Calculating the scaling dimensions a la Gu and Wen (2009)
+The scaling dimensions are:
+[-0.       0.23068  1.05747  1.07057  1.07202  2.04138  2.04731  2.05038
+  2.05439  2.06348  2.1153   2.28289  2.87669  2.90735  2.92091  2.94472
+  2.94774  3.02075  3.04619  3.051  ]
+------------------------------------
+------------------------------------
+Performing 20-th to 21-th RG...
+Calculate the response matrix using jax.linearize routine, and calculate the first 20 scaling dimensions from its eigenvalues.
+Traceback (most recent call last):
+  File "/home/wenhan/jupyter/SRG/tensorRGflow-brucelyu/analysisCodes/hotrgScale.py", line 97, in <module>
+    scDims = diffGiltHOTRG(Acur, Anormcur, isom, RABs, RABsh, scaleN = NscaleD)
+  File "/home/wenhan/jupyter/SRG/tensorRGflow-brucelyu/analysisCodes/HOTRG.py", line 757, in diffGiltHOTRG
+    psiAp, responseMat = jax.linearize(equationRG, psiA)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/api.py", line 2515, in linearize
+    out_primals, out_pvals, jaxpr, consts = ad.linearize(jaxtree_fun, *primals_flat)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/ad.py", line 124, in linearize
+    jaxpr, out_pvals, consts = pe.trace_to_jaxpr_nounits(jvpfun_flat, in_pvals)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 767, in trace_to_jaxpr_nounits
+    jaxpr, (out_pvals, consts, env) = fun.call_wrapped(pvals)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/linear_util.py", line 167, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/wenhan/jupyter/SRG/tensorRGflow-brucelyu/analysisCodes/HOTRG.py", line 752, in equationRG
+    psiAp = Ap.reshape(N1 * N2 * N3 * N4)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/numpy/lax_numpy.py", line 793, in _reshape
+    return lax.reshape(a, newshape, None)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/lax/lax.py", line 883, in reshape
+    return reshape_p.bind(
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 329, in bind
+    return self.bind_with_trace(find_top_trace(args), args, params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 332, in bind_with_trace
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/ad.py", line 310, in process_primitive
+    primal_out, tangent_out = jvp(primals_in, tangents_in, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/ad.py", line 490, in linear_jvp
+    val_out = primitive.bind(*primals, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 329, in bind
+    return self.bind_with_trace(find_top_trace(args), args, params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 332, in bind_with_trace
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 712, in process_primitive
+    return primitive.impl(*tracers, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/dispatch.py", line 113, in apply_primitive
+    compiled_fun = xla_primitive_callable(prim, *unsafe_map(arg_spec, args),
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/util.py", line 253, in wrapper
+    return cached(config._trace_context(), *args, **kwargs)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/util.py", line 246, in cached
+    return f(*args, **kwargs)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/dispatch.py", line 197, in xla_primitive_callable
+    compiled = _xla_callable_uncached(lu.wrap_init(prim_fun), device, None,
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/dispatch.py", line 359, in _xla_callable_uncached
+    return lower_xla_callable(fun, device, backend, name, donated_invars, False,
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/dispatch.py", line 445, in lower_xla_callable
+    jaxpr, out_type, consts = pe.trace_to_jaxpr_final2(
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2077, in trace_to_jaxpr_final2
+    jaxpr, out_type, consts = trace_to_subjaxpr_dynamic2(fun, main, debug_info)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2027, in trace_to_subjaxpr_dynamic2
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/linear_util.py", line 167, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/dispatch.py", line 192, in prim_fun
+    out = prim.bind(*args, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 329, in bind
+    return self.bind_with_trace(find_top_trace(args), args, params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 332, in bind_with_trace
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 1712, in process_primitive
+    return custom_staging_rules[primitive](self, *tracers, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/lax/lax.py", line 3354, in _reshape_staging_rule
+    return trace.default_process_primitive(reshape_p, (x,), params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 1717, in default_process_primitive
+    out_avals, effects = primitive.abstract_eval(*avals, **params)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 365, in abstract_eval_
+    return abstract_eval(*args, **kwargs), no_effects
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/lax/utils.py", line 66, in standard_abstract_eval
+    return core.ShapedArray(shape_rule(*avals, **kwargs),
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/_src/lax/lax.py", line 3293, in _reshape_shape_rule
+    not core.same_shape_sizes(np.shape(operand), new_sizes)):
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 1847, in same_shape_sizes
+    return 1 == divide_shape_sizes(s1, s2)
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 1844, in divide_shape_sizes
+    return handler.divide_shape_sizes(ds[:len(s1)], ds[len(s1):])
+  File "/home/wenhan/anaconda3/envs/tf-gpu/lib/python3.9/site-packages/jax/core.py", line 1740, in divide_shape_sizes
+    raise InconclusiveDimensionOperation(f"Cannot divide evenly the sizes of shapes {tuple(s1)} and {tuple(s2)}")
+jax.core.InconclusiveDimensionOperation: Cannot divide evenly the sizes of shapes (30, 30, 25, 25) and (640000,)

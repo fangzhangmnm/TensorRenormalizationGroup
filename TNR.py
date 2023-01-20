@@ -5,19 +5,25 @@
 
 import torch
 from opt_einsum import contract_path
-from opt_einsum import contract as _contract
-from safe_svd import svd,sqrt
-from torch.linalg import qr
+from opt_einsum import contract
+#from safe_svd import svd,sqrt
+from torch.linalg import svdvals,svd,qr
+from torch import sqrt,lobpcg 
 from dataclasses import dataclass
 from tqdm.auto import tqdm
 from math import prod
 import numpy as np
 from ScalingDimensions import get_entanglement_entropy
+from fix_gauge import fix_gauge,MCF_options
+from HOTRGZ2 import gauge_invariant_norm
 
-def contract(eq,*Ts):
-    #print([T.shape for T in Ts])
-    #print(contract_path(eq,*Ts))
-    return _contract(eq,*Ts)
+def _toN(t):
+    return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
+
+# def contract(eq,*Ts):
+#     #print([T.shape for T in Ts])
+#     #print(contract_path(eq,*Ts))
+#     return _contract(eq,*Ts)
 
 @dataclass
 class TNRLayer:
@@ -29,10 +35,12 @@ class TNRLayer:
     
 @dataclass
 class TNR_options:
-    max_nIter:int
-    max_dim_TNR:int
-    max_dim_TRG:int
-    threshold_TTdiff:float
+    max_nIter:int=200
+    max_dim_TNR:int=8
+    max_dim_TRG:int=16
+    threshold_TTdiff:float=1e-7
+    disentangling_method:str='relaxing'
+        
         
 
 def TNR_layer(T,options:TNR_options):
@@ -40,45 +48,8 @@ def TNR_layer(T,options:TNR_options):
     dimW=min(options.max_dim_TNR,dimT0*dimT1)
     dimB=min(options.max_dim_TRG,dimW**2)
 
-    vLRef=get_isometry_from_transfer_tensor(T,(0,2),(1,3),max_dim=dimW)
-    vRRef=get_isometry_from_transfer_tensor(T,(0,3),(1,2),max_dim=dimW)
-    u=torch.eye(dimT0**2).reshape(dimT0,dimT0,dimT0,dimT0)
-    if dimW<dimT0*dimT1:
-        vL,vR=vLRef[:1,...],vRRef[:1,...]
-        pbar=tqdm(leave=False)
-        for cur_dimW in tqdm(range(1,dimW+1),leave=False):
-            vL=extend_isometry_tensor(vL,vLRef,cur_dimW)
-            vR=extend_isometry_tensor(vR,vRRef,cur_dimW)
-            TTerr=build_TTerr_rel(T=T,vL=vL,vR=vR,u=u)
-            Bee=get_entanglement_entropy(svd_tensor(build_B(T=T,vL=vL,vR=vR,u=u),(0,2),(3,1))[1])
-            
-            for _iter in range(options.max_nIter):
-                def update(oldValue,newValue,absolute=False):
-                    return newValue,(newValue-oldValue).norm()*(1 if absolute else oldValue.norm())
-
-                env_vL=build_env_vL(T=T,vL=vL,vR=vR,u=u)
-                vL,vLdiff=update(vL,get_isometry_from_environment(env_vL,(0,),(1,2)))
-
-                env_vR=build_env_vR(T=T,vL=vL,vR=vR,u=u)
-                vR,vRdiff=update(vR,get_isometry_from_environment(env_vR,(0,),(1,2)))
-
-                env_u=build_env_u(T=T,vL=vL,vR=vR,u=u)
-                u,udiff=update(u,get_isometry_from_environment(env_u,(0,1),(2,3)))
-
-                Bee,Beediff=update(Bee,get_entanglement_entropy(svd_tensor(build_B(T=T,vL=vL,vR=vR,u=u),(0,2),(3,1))[1]))
-
-                TTerr,TTerrdiff=update(TTerr,build_TTerr_rel(T=T,vL=vL,vR=vR,u=u),absolute=True)
-
-                pbar.set_postfix({'cur_dimW':cur_dimW,'udiff':udiff,'Bee':Bee})
-                pbar.update()
-                if TTerrdiff<options.threshold_TTdiff:
-                    break
-            if TTerrdiff>=options.threshold_TTdiff:
-                print('not converged, err=',TTerrdiff)
-        pbar.close()
-    else:
-        vL,vR=vLRef,vRRef
-
+    getuv=disentangling_methods[options.disentangling_method]
+    vL,vR,u=getuv(T,options)
 
     B=build_B(T=T,vL=vL,vR=vR,u=u)
     BL,BR=split_tensor(B,(0,2),(3,1),max_dim=dimB)
@@ -87,11 +58,7 @@ def TNR_layer(T,options:TNR_options):
     Tn=build_A(BL=BL,BR=BR,vL=vL,vR=vR,z=z)
 
     return Tn,TNRLayer(tensor_shape=T.shape,vL=vL,vR=vR,u=u,z=z)
-
-
-from fix_gauge import fix_gauge,MCF_options
-from HOTRGZ2 import gauge_invariant_norm
-
+    
 def TNR_layers(T0,nLayers,options,return_tensors=False):
     print('Generating TNR layers')
     tnr_options=TNR_options(**{k[4:]:v for k,v in options.items() if k[:4]=='tnr_'})
@@ -113,9 +80,156 @@ def TNR_layers(T0,nLayers,options,return_tensors=False):
         Ts.append(T);logTotals.append(logTotal)
     print('TNR layers generated')
     return (layers,Ts,logTotals) if return_tensors else layers
+    
+    
+#========== get disentangler ==========
+disentangling_methods={}
+def _register_disentangling_method(name):
+    def _decorator(func):
+        disentangling_methods[name]=func
+        return func
+    return _decorator
+    
+@_register_disentangling_method('relaxing')    
+def getuv_relaxing(T,options):
+    dimT0,dimT1=T.shape[0],T.shape[2]
+    dimW=min(options.max_dim_TNR,dimT0*dimT1)
+    
+    vLRef=get_isometry_from_transfer_tensor(T,(0,2),(1,3),max_dim=dimW)
+    vRRef=get_isometry_from_transfer_tensor(T,(0,3),(1,2),max_dim=dimW)
+    u=torch.eye(dimT0**2).reshape(dimT0,dimT0,dimT0,dimT0)
+    if dimW<dimT0*dimT1:
+        vL,vR=None,None
+        for cur_dimW in tqdm(range(1,dimW+1),leave=False):
+            vL=extend_isometry_tensor(vL,vLRef,cur_dimW)
+            vR=extend_isometry_tensor(vR,vRRef,cur_dimW)
+            vL,vR,u=optimize_uv(T=T,vL=vL,vR=vR,u=u,options=options)
+            benchmark_disentangler(U=u,A=build_TT_A(T))
+    else:
+        vL,vR=vLRef,vRRef
+    return vL,vR,u
+    
+    
+def optimize_uv(T,vL,vR,u,options):
+    TTerr,TTerrdiff=build_TTerr_rel(T=T,vL=vL,vR=vR,u=u),0
+    Bee=get_entanglement_entropy(svd_tensor(build_B(T=T,vL=vL,vR=vR,u=u),(0,2),(3,1))[1])
+    pbar=tqdm(range(options.max_nIter))
+    print('optimizing u, initial entanglement= ',_toN(Bee))
+    for _iter in pbar:
+        def update(oldValue,newValue,absolute=False):
+            return newValue,(newValue-oldValue).norm()*(1 if absolute else oldValue.norm())
+
+        env_vL=build_env_vL(T=T,vL=vL,vR=vR,u=u)
+        vL,vLdiff=update(vL,get_isometry_from_environment(env_vL,(0,),(1,2)))
+
+        env_vR=build_env_vR(T=T,vL=vL,vR=vR,u=u)
+        vR,vRdiff=update(vR,get_isometry_from_environment(env_vR,(0,),(1,2)))
+
+        env_u=build_env_u(T=T,vL=vL,vR=vR,u=u)
+        u,udiff=update(u,get_isometry_from_environment(env_u,(0,1),(2,3)))
+
+        Bee,Beediff=update(Bee,get_entanglement_entropy(svd_tensor(build_B(T=T,vL=vL,vR=vR,u=u),(0,2),(3,1))[1]))
+
+        TTerr,TTerrdiff=update(TTerr,build_TTerr_rel(T=T,vL=vL,vR=vR,u=u),absolute=True)
+
+        pbar.set_postfix({'TTerr':_toN(TTerr),'Bee':_toN(Bee)})
+        if TTerrdiff<options.threshold_TTdiff:
+            break
+    if TTerrdiff>=options.threshold_TTdiff:
+        print('optimizing not converged, err=',TTerrdiff)
+    print('final entanglement=',_toN(Bee))
+    return vL,vR,u
+
+
+@_register_disentangling_method('fast')
+def getuv_fast(T,options):
+    dimT0,dimT1=T.shape[0],T.shape[2]
+    dimW=min(options.max_dim_TNR,dimT0*dimT1)
+    A=build_TT_A(T)
+    u=get_disentangler_fast(A)
+    benchmark_disentangler(U=u,A=build_TT_A(T))
+    vL=get_isometry_from_transfer_tensor(T,(0,2),(1,3),max_dim=dimW)
+    vR=get_isometry_from_transfer_tensor(T,(0,3),(1,2),max_dim=dimW)
+    vL,vR,u=optimize_uv(T,vL,vR,u,options)
+    benchmark_disentangler(U=u,A=build_TT_A(T))
+    return vL,vR,u
 
 
 
+
+# https://arxiv.org/pdf/2104.08283.pdf
+def get_disentangler_fast(A:torch.Tensor):
+    # i   j
+    # uuuuu
+    # I   J   0  1
+    # AAAAA   AAAA
+    # a   b   2  3
+    print('getting fast entangler')
+    dimi,dimj,dima,dimb=A.shape
+    assert dimi<=dima and dimj<=dimb
+    r=torch.randn(dimi,dimj)
+    rA=contract('IJ,IJab->ab',r,A)
+    s,u=lobpcg(rA.conj()@rA.T,k=1)
+    aa=u[:,0]
+    s,u=lobpcg(rA.T.conj()@rA,k=1)
+    ab=u[:,0]
+    AIJa=contract('IJab,b->IJa',A,ab).reshape(dimi*dimj,dima)
+    AIJb=contract('IJab,a->IJb',A,aa).reshape(dimi*dimj,dimb)
+    Via=svd(AIJa,full_matrices=False)[2][:dimi,:]
+    Vjb=svd(AIJb,full_matrices=False)[2][:dimj,:]
+    BijIJ=contract('ia,jb,IJab->ijIJ',Via,Vjb,A.conj())
+    UijIJ=svd_tensor_to_isometry(BijIJ,(0,1),(2,3))
+    print('fast entangler retrieved')
+    return UijIJ
+
+def get_disentangler_relaxing(A,dimVL,dimVR,nIter=100):
+    dimi,dimj,dima,dimb=A.shape
+    vLRef=get_isometry_from_transfer_tensor(A,(0,2),(1,3),max_dim=dimVL)
+    vRRef=get_isometry_from_transfer_tensor(A,(0,3),(1,2),max_dim=dimVR)
+    u=torch.eye(dimi*dimj).reshape(dimi,dimj,dimi,dimj)
+    vL,vR=None,None
+    for cur_dimW in tqdm(range(1,max(dimVL,dimVR)+1),leave=False):
+        vL=extend_isometry_tensor(vL,vLRef,min(cur_dimW,dimVL))
+        vR=extend_isometry_tensor(vR,vRRef,min(cur_dimW,dimVR))
+        for _iter in tqdm(range(nIter)):
+            vL,vR,u=optimize_disentangler_relaxing(A=A,vL=vL,vR=vR,u=u)
+    return u
+
+def refine_disentangler_relaxing(A,u,dimVL,dimVR,nIter=100):
+    vL=get_isometry_from_transfer_tensor(A,(0,2),(1,3),max_dim=dimVL)
+    vR=get_isometry_from_transfer_tensor(A,(0,3),(1,2),max_dim=dimVR)
+    for _iter in tqdm(range(nIter)):
+        vL,vR,u=optimize_disentangler_relaxing(A=A,vL=vL,vR=vR,u=u)
+    return u
+
+
+def optimize_disentangler_relaxing(A,vL,vR,u):
+    #  \     /  0 3
+    #  vL┐ ┌vR   B   #note that the leg ordering is different in TNR
+    #   |uuu|   2 1 
+    #   |AAA|   
+    #   └┘ └┘
+    vuA=contract('xia,yjb,ijIJ,IJab->xy',vL,vR,u,A)
+    env_vL=contract('yjb,ijIJ,IJab,xy->xia',vR,u,A,vuA.conj())
+    vL=get_isometry_from_environment(env_vL,(0,),(1,2))
+    env_vR=contract('xia,ijIJ,IJab,xy->yjb',vL,u,A,vuA.conj())
+    vR=get_isometry_from_environment(env_vR,(0,),(1,2))
+    env_u=contract('xia,yjb,IJab,xy->ijIJ',vL,vR,A,vuA.conj())
+    u=get_isometry_from_environment(env_u,(0,1),(2,3))
+    return vL,vR,u
+
+
+    
+def benchmark_disentangler(U,A):
+    UA=contract('ijIJ,IJab->ijab',U,A)
+
+    ee1=get_entanglement_entropy(svdvals_tensor(A,(0,2),(1,3)))
+    ee2=get_entanglement_entropy(svdvals_tensor(UA,(0,2),(1,3)))
+    print('entanglement removed by disentangler: ',_toN(ee1),' -> ',_toN(ee2))
+    
+
+
+#========== TNR tensors ===========
     
 
 def build_A(BL,BR,vL,vR,z):
@@ -196,6 +310,11 @@ def unbild_upb(upb,vL,vR,u):
 
 def build_TT(T):
     return contract('ijkl,mnlo->imjnko',T,T)
+    
+def build_TT_A(T):
+    dimT0,dimT1=T.shape[0],T.shape[2]
+    return contract('ijkl,mnlo->imjkno',T,T).reshape(dimT0,dimT0,dimT0*dimT1,dimT0*dimT1)
+    
 
 def build_env_vL(T,vL,vR,u):
     # upb=contract('Axk,xyim,ijkl,mnlo->Ayojn',vL,u,T,T).conj()
@@ -215,18 +334,6 @@ def build_env_u(T,vL,vR,u):
     return contract('ABjn,Axk,Byo,ijkl,mnlo->xyim',upb,vL,vR,T,T)
 
     
-# def build_C(vL,vR):
-#     # \     /   0 3  0       0
-#     # vR---vL    C    w2   2v 
-#     #  |   |    2 1   1     1 
-#     # vRd--vLd
-#     # /     \
-#     upb=contract('Azx,Bwx->ABzw',vL,vR)
-#     lwb=contract('Azx,Bwx->ABzw',vL.conj(),vR.conj())
-#     C=contract('ABzw,CDzw->ADCB',upb,lwb)
-#     #C=C+contract('ADCB->CBAD',C.conj())
-#     return C
-
 
 
 #========== utilities ==========
@@ -242,15 +349,29 @@ def generate_random_isometry_tensor(shape0,shape1):
     dim0,dim1=np.prod(shape0),np.prod(shape1)
     return generate_random_isometry(dim0,dim1).reshape(shape0+shape1)
 
+
 def svd_tensor(M,idx1,idx2):
     # returns u,s,vh, M=u*s@vh
     shape1=tuple(M.shape[i] for i in idx1)
     shape2=tuple(M.shape[i] for i in idx2)
     M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
-    u,s,vh=svd(M)
+    u,s,vh=svd(M,full_matrices=False)
     u=u.reshape(shape1+(-1,))
     vh=vh.reshape((-1,)+shape2)
     return u,s,vh
+    
+def svdvals_tensor(M,idx1,idx2,k=None):
+    shape1=tuple(M.shape[i] for i in idx1)
+    shape2=tuple(M.shape[i] for i in idx2)
+    M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
+    return svdvals(M,driver='gesvd')
+    # MMh=M@M.T.conj()
+    # if MMh.shape[1]<64:
+    #     s=svdvals(MMh)
+    # else:
+    #     k=k or MMh.shape[1]//3
+    #     s,u=lobpcg(MMh,k=k)
+    # return s**.5
     
 def qr_tensor(M,idx1,idx2):
     # return q,r, M=q@r
@@ -258,8 +379,8 @@ def qr_tensor(M,idx1,idx2):
     shape2=tuple(M.shape[i] for i in idx2)
     M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
     q,r=qr(M)
-    q=q.reshape(shape1+shape1)
-    r=r.reshape(shape1+shape2)
+    q=q.reshape(shape1+(-1,))
+    r=r.reshape((-1,)+shape2)
     return q,r
     
 
@@ -267,22 +388,23 @@ def split_tensor(M,idx1,idx2,max_dim=None):
     shape1=tuple(M.shape[i] for i in idx1)
     shape2=tuple(M.shape[i] for i in idx2)
     M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
-    u,s,vh=svd(M)
+    u,s,vh=svd(M,full_matrices=False)
     s=sqrt(s)
     u,vh=(u*s)[:,:max_dim],((vh.T*s).T)[:max_dim,:]
     u=u.reshape(shape1+(-1,))
     vh=vh.reshape((-1,)+shape2)
     return u,vh
 
-def get_isometry_from_environment(M,idx1,idx2):
+def svd_tensor_to_isometry(M,idx1,idx2):
     shape1=tuple(M.shape[i] for i in idx1)
     shape2=tuple(M.shape[i] for i in idx2)
-    M=M.conj().permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
-    u,_,vh=svd(M)
-    uvh=u@vh
-    uvh=uvh.reshape(shape1+shape2)
-    uvh=uvh.permute(invert_permutation(idx1+idx2))
+    M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
+    u,_,vh=svd(M,full_matrices=False)
+    uvh=(u@vh).reshape(shape1+shape2).permute(invert_permutation(idx1+idx2))
     return uvh
+
+def get_isometry_from_environment(M,idx1,idx2):
+    return svd_tensor_to_isometry(M,idx1,idx2).conj()
 
 def get_isometry_from_transfer_tensor(E,idx1,idx2,max_dim,hermitian=False):
     #wd w E ~= E
@@ -294,13 +416,14 @@ def get_isometry_from_transfer_tensor(E,idx1,idx2,max_dim,hermitian=False):
     return w
 
 def extend_isometry_tensor(w,wRef,new_dim):
-    assert w.shape[1:]==wRef.shape[1:]
-    assert w.shape[0]<=new_dim and new_dim<=wRef.shape[0]
+    assert new_dim<=wRef.shape[0]
     wNew=wRef[:new_dim,...]
-    if w is not None and w.shape[0]>0:
+    if w is not None:
+        assert w.shape[1:]==wRef.shape[1:]
+        assert w.shape[0]<=new_dim and new_dim<=wRef.shape[0]
         wNew[:w.shape[0]]=w
-    q,r=torch.linalg.qr(wNew.reshape(new_dim,-1).T)
-    wNew=q.T.reshape(new_dim,*w.shape[1:])
+    q,r=qr(wNew.reshape(new_dim,-1).T)
+    wNew=q.T.reshape(new_dim,*wRef.shape[1:])
     return wNew
 
 def invert_permutation(permutation):
@@ -403,109 +526,3 @@ def TRG_layers(T0,nLayers,options={},return_tensors=False):
         layers.append(layer)
         Ts.append(T);logTotals.append(logTotal)
     return (layers,Ts,logTotals) if return_tensors else layers
-
-''' 
-def TNR_layer(T,options:TNR_options):
-    dimT=T.shape[0]
-    dimW=min(options.max_dim_TNR,dimT**2)
-    layer=TNRLayer(
-        tensor_shape=T.shape,
-        u=generate_random_isometry(dimT**2,dimT**2).reshape(dimT,dimT,dimT,dimT),
-        w=generate_random_isometry(dimW,dimT**2).reshape(dimW,dimT,dimT),
-        v=generate_random_isometry(dimW,dimT**2).reshape(dimW,dimT,dimT),
-        )
-    with tqdm(range(options.nIter),leave=False) as pbar:
-        for _iter in pbar:
-            Eu=build_env_u(T,layer)
-            u,s,vh=svd(Eu.reshape(dimT**2,dimT**2))
-            uNew=(u@vh).reshape(dimT,dimT,dimT,dimT)
-            #uNew=torch.eye(dimT**2).reshape(dimT,dimT,dimT,dimT)
-            diffu=(layer.u-uNew).norm()
-            layer.u=uNew
-            
-            Ew=build_env_w(T,layer)
-            u,s,vh=svd(Ew.reshape(dimW,dimT**2))
-            wNew=(u@vh).reshape(dimW,dimT,dimT)
-            diffw=(layer.w-wNew).norm()
-            layer.w=wNew
-            
-            Ev=build_env_v(T,layer)
-            u,s,vh=svd(Ev.reshape(dimW,dimT**2))
-            vNew=(u@vh).reshape(dimW,dimT,dimT)
-            diffv=(layer.v-vNew).norm()
-            layer.v=vNew
-            
-            T1,T2=build_wuT_diff(T,layer)
-            diffT=(T1-T2).norm()
-            
-            pbar.set_postfix({'dT':diffT,'du':diffu,'dw':diffw,'dv':diffv})
-    T=forward_TNR(T,layer=layer,options=options)
-    return T,layer
-def build_env_u(T,layer):
-    return contract('xyim,axk,byo,aXK,bYO,ijkl,mnlo,IjKL,MnLO->XYIM',
-        layer.u.conj(),
-        layer.w.conj(),layer.v.conj(),layer.w,layer.v,
-        T.conj(),T.conj(),T,T)
-        
-def build_env_w(T,layer):
-    return contract('xyim,XYIM,axk,byo,bYO,ijkl,mnlo,IjKL,MnLO->aXK',
-        layer.u.conj(),layer.u,
-        layer.w.conj(),layer.v.conj(),layer.v,
-        T.conj(),T.conj(),T,T)
-
-def build_env_v(T,layer):
-    return contract('xyim,XYIM,axk,byo,aXK,ijkl,mnlo,IjKL,MnLO->bYO',
-        layer.u.conj(),layer.u,
-        layer.w.conj(),layer.v.conj(),layer.w,
-        T.conj(),T.conj(),T,T)
-def forward_TNR(T,layer:TNRLayer,options:TNR_options):
-    B=build_B(T,layer)
-    C=build_C(T,layer)
-    T=TRG(B,C,options.max_dim_TRG)
-    return T
-    
-def TNR_layer(T,options:TNR_options):
-    dimT0,dimT1=T.shape[0],T.shape[1]
-    dimW=min(options.max_dim_TNR,dimT0*dimT1)
-    dimB=min(options.max_dim_TRG,dimW**2)
-
-    w0=get_isometry_from_environment(T,(0,2),(1,3),max_dim=dimW)
-    v0=get_isometry_from_environment(T,(0,3),(1,2),max_dim=dimW)
-    u0=torch.eye(dimT0**2).reshape(dimT0,dimT0,dimT0,dimT0)
-
-
-    layer=TNRLayer(
-        tensor_shape=T.shape,
-        u=u0,v=v0,w=w0,z=None)
-    with tqdm(range(options.nIter),leave=False) as pbar:
-        for _iter in pbar:
-            def _r(oldValue,newValue):
-                return newValue,(newValue-oldValue).norm()/oldValue.norm()
-
-            layer.w.requires_grad_(True)
-            build_upb(T=T,w=layer.w,v=layer.v,u=layer.u).norm().backward()
-            layer.w,wdiff=_r(layer.w.detach(),isometrize_tensor(layer.w.grad.conj(),(0,),(1,2)))
-            layer.w.requires_grad_(False)
-
-            layer.v.requires_grad_(True)
-            build_upb(T=T,w=layer.w,v=layer.v,u=layer.u).norm().backward()
-            layer.v,vdiff=_r(layer.v.detach(),isometrize_tensor(layer.v.grad.conj(),(0,),(1,2)))
-            layer.v.requires_grad_(False)
-            
-            layer.u.requires_grad_(True)
-            build_upb(T=T,w=layer.w,v=layer.v,u=layer.u).norm().backward()
-            layer.u,udiff=_r(layer.u.detach(),isometrize_tensor(layer.u.grad.conj(),(0,1),(2,3)))
-            layer.u.requires_grad_(False)
-            
-            T1,T2=build_wuT_diff(T,w=layer.w,v=layer.v,u=layer.u)
-            tdiff=(T1-T2).norm()
-            
-            pbar.set_postfix({'du':udiff,'dw':wdiff,'dv':vdiff,'dT':tdiff})
-
-    B=build_B(T=T,w=layer.w,v=layer.v,u=layer.u)
-    BL,BR=split_tensor(B,(0,2),(3,1),max_dim=dimB)
-    env_z=build_env_z(BL=BL,BR=BR,w=layer.w,v=layer.v)
-    layer.z=get_isometry_from_environment(env_z,(0,1),(2,3),max_dim=dimB)
-    T=build_A(BL=BL,BR=BR,w=layer.w,v=layer.v,z=layer.z)
-    return T,layer
-'''

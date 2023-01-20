@@ -1,21 +1,8 @@
+if __name__ != '__main__':
+    assert False, 'This file is not meant to be imported'
+
 import argparse
-
-
-# filename='data/transfer_matrix_X16_TNR_L10'
-
-
-# options={
-#     'tensor_path':'data/tnr_X16_tensors.pkl',
-#     'iLayer':10,
-#     'max_dim':16,
-    
-#     'svd_max_iter':100,
-#     'svd_tol':1e-16,
-#     'svd_num_eigvecs':16,
-    
-#     '_version':1,
-# }
-
+parser = argparse.ArgumentParser()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--filename', type=str, required=True) # data/tnr_X16_L10
@@ -35,46 +22,20 @@ from opt_einsum import contract # idk why but its required to avoid bug in contr
 import torch
 import numpy as np
 torch.set_default_tensor_type(torch.cuda.DoubleTensor)
-
 if options['device']=='cpu':
     torch.set_default_tensor_type(torch.DoubleTensor)
 else:  
     torch.set_default_tensor_type(torch.cuda.DoubleTensor)
 device=torch.device(options['device'])
 torch.cuda.set_device(device)
-options.pop('device')
 
-
-import os,pdb
 from scipy.sparse.linalg import eigs,eigsh
 from linearized import mysvd, myeigh, get_linearized_cylinder,get_linearized_cylinder_np, verify_linear_operator, check_hermicity
 from ScalingDimensions import get_scaling_dimensions
 from HOTRGZ2 import HOTRG_layers
 
-# def _toP(t):
-#     if isinstance(t,list):
-#         return [_toP(tt) for tt in t]
-#     elif isinstance(t,torch.Tensor):
-#         return t.detach().cpu().numpy()
-#     else:
-#         return t
 
-filename=options['filename']
-
-if os.path.exists(filename+'_options.pkl'):
-    _options=torch.load(filename+'_options.pkl',map_location=device)
-    if not(options==_options):
-        def tryRemove(filename):
-            if os.path.exists(filename):
-                os.remove(filename)
-        tryRemove(filename+'_options.pkl')
-        tryRemove(filename+'_eigs_cyl.pkl')
-
-torch.save(options,filename+'_options.pkl')
-print('file saved: ',filename+'_options.pkl')
-print(options)
-
-layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
+options1,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
 
 iLayer=options['iLayer']
 T=Ts[iLayer]
@@ -112,11 +73,14 @@ sc,uc=sc.abs()[sc.abs().argsort(descending=True)],uc[:,sc.abs().argsort(descendi
 
 print(options)
 print('scaling dimensions from Transfer Matrix on a Cylinder')
-# sort the array sc
 print(get_scaling_dimensions(sc,scaling=np.exp(2*np.pi/4)))
-           
-torch.save((sc,uc),filename+'_eigs_cyl.pkl')
-print('file saved: ',filename+'_eigs_cyl.pkl')
+
+filename=options['filename']
+if filename[-4:]!='.pkl':
+    filename+='.pkl'
+
+torch.save((options,sc,uc),filename)
+print('file saved: ',filename)
 
 
 

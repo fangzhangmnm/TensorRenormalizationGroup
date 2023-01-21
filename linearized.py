@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from tqdm.auto import tqdm
 import scipy.sparse.linalg
-from scipy.sparse.linalg import LinearOperator,aslinearoperator,eigs
+from scipy.sparse.linalg import LinearOperator,aslinearoperator
 from functorch import jvp,vjp
 from math import prod
 import torch
@@ -308,6 +308,33 @@ def myeigh(M,k=10,tol=0,maxiter=500,impose_hermitian=True):
     eigvals=np.array(eigvals)
     return eigvals,eigvecs.T
 
+def myeig_old(M,k=10,tol=1e-7,maxiter=200):
+    dim=M.shape[0]
+    eigvecs,eigvals=[],[]
+    tols=tol if isinstance(tol,list) else [tol]*k
+    maxiters=maxiter if isinstance(maxiter,list) else [maxiter]*k
+    pbar1=tqdm(range(k),leave=False)
+    for j in pbar1:
+        v=np.random.randn(dim);v=v/np.linalg.norm(v)
+        pbar=tqdm(range(maxiters[j]),leave=False)
+        for i in pbar:
+            vn=M*v
+            for u in eigvecs:
+                vn=vn-u*(u@vn)
+            eig=np.linalg.norm(vn)/np.linalg.norm(v)
+            #print(eig)
+            if np.linalg.norm(vn)==0:
+                break
+            vn=vn/np.linalg.norm(vn)
+            err=np.linalg.norm(vn-v)
+            pbar.set_postfix(err=err)
+            pbar1.set_postfix(eig=eig)
+            if err<=tols[j]:
+                break
+            v=vn
+        eigvecs.append(v)
+        eigvals.append(eig)
+    return eigvals,np.array(eigvecs).T
 
 #M=np.random.randn(5,4)
 #u,s,vh=mysvd(scipy.sparse.linalg.aslinearoperator(M))

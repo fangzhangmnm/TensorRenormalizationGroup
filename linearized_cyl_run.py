@@ -52,9 +52,7 @@ print('check Mc_torch')
 check_hermicity(Mc_torch,nTests=1)
 verify_linear_operator(Mc_torch,nTests=1)
 
-print('svd of Mc_torch')
-
-
+print('calculating spectrum of Mr')
 # uc,sc,_=mysvd(Mc_np,k=options['svd_num_eigvecs'],tol=options['svd_tol'],maxiter=options['svd_max_iter'])
 # -0.0000, 0.1147, 1.0017, 1.1369, 1.1369, 2.0013, 2.0014, 2.0018, 2.0018, 
 # 2.1167, 2.1364, 2.1371, 3.0015, 3.0011, 3.0026, 3.0009

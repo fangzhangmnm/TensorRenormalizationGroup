@@ -16,6 +16,9 @@ python scDim_plot.py --filename data/hotrg_gilt_X24 --tensor_path data/hotrg_gil
 python scDim_plot.py --filename data/tnr_X16 --tensor_path data/tnr_X16.pkl
 
 python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L10 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 10 --mcf_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L10 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 10 --mcf_enabled --gilt_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled
 python linearized_cyl_run.py --filename data/hotrg_gilt_X24_cyl_L10 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 10
 
 python linearized_run.py --filename data/tnr_X16_lTRG_L10 --tensor_path data/tnr_X16.pkl --iLayer 10

@@ -68,6 +68,7 @@ def TNR_layers(T0,nLayers,options,return_tensors=False):
     Ts,logTotals=[T],[0]
     layers=[]
     for iLayer in tqdm(list(range(nLayers)),leave=False):
+        print('TNR layer',iLayer)
         norm=gauge_invariant_norm(T)
         T=T/norm
         logTotal=2*(logTotal+norm.log())

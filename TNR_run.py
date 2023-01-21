@@ -8,7 +8,7 @@ parser.add_argument('--filename', type=str, required=True) # data/tnr_X16
 parser.add_argument('--nLayers', type=int, required=True) # 20
 parser.add_argument('--tnr_max_dim_TRG', type=int, required=True) # 16
 parser.add_argument('--tnr_max_dim_TNR', type=int, required=True) # 8
-parser.add_argument('--tnr_max_nIter', type=int, default=0)
+parser.add_argument('--tnr_max_nIter', type=int, default=100)
 parser.add_argument('--tnr_threshold_TTdiff', type=float, default=1e-7)
 parser.add_argument('--tnr_disentangling_method', type=str, choices=['fast','relaxing'], default='relaxing')
 parser.add_argument('--mcf_enabled', action='store_true')

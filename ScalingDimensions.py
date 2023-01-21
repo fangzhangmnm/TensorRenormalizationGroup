@@ -88,7 +88,7 @@ def get_half_circle_density_matrix(u,loop_length):
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None):
+def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None,filename=None):
     curve=[]
     
     def pad(v):
@@ -157,6 +157,10 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
     plt.ylabel('eigenvalues of normalized transfer matrix')
     plt.ylim([0,1])
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_eigs.png')
+        print('saved to',filename+'_eigs.png')
+        plt.close()
     
     sdsds=np.array(curve['scaling_dimensions'].tolist()).T
     if reference_scaling_dimensions is not None:
@@ -171,6 +175,10 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
     plt.xlabel('RG Step')
     plt.ylabel('scaling dimensions')
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_scDim.png')
+        print('saved to',filename+'_scDim.png')
+        plt.close()
     
     if reference_center_charge is not None:
         plt.plot(curve['layer'],np.ones_like(curve['layer'])*reference_center_charge,'-',color='lightgrey')
@@ -181,6 +189,10 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
     plt.xlabel('RG Step')
     plt.ylabel('central charge')
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_c.png')
+        print('saved to',filename+'_c.png')
+        plt.close()
     
     for item in ['min_entropy','transfer_entropy']:
         break
@@ -204,7 +216,7 @@ def effective_rank(M):
     entropy=-torch.sum(p*torch.log(p))
     return torch.exp(entropy)
 
-def show_effective_rank(Ts):
+def show_effective_rank(Ts,filename=None):
     curve=[]
 
     for i,A in tqdm([*enumerate(Ts)]):
@@ -233,15 +245,23 @@ def show_effective_rank(Ts):
     plt.xlabel('RG Step')
     plt.ylabel('normalized eigenvalues')
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_eigsd.png')
+        print('saved to',filename+'_eigsd.png')
+        plt.close()
 
     plt.plot(iii,ee,'-k',label='nwse')
     #plt.plot(iii,ee1,label='nesw')
     plt.ylabel('effective rank')
     #plt.legend()
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_rankd.png')
+        print('saved to',filename+'_rankd.png')
+        plt.close()
     return curve
     
-def show_diff(Ts,stride=1):
+def show_diff(Ts,stride=1,filename=None):
     curve=[]
 
     for i,A in tqdm([*enumerate(Ts)]):
@@ -265,6 +285,10 @@ def show_diff(Ts,stride=1):
     plt.yscale('log')
     plt.ylim((1e-7,2))
     plt.show()
+    if filename is not None:
+        plt.savefig(filename+'_diff.png')
+        print('saved to',filename+'_diff.png')
+        plt.close()
     return curve
     
 from HOTRGZ2 import reflect_tensor_axis,permute_tensor_axis

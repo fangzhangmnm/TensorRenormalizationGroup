@@ -13,6 +13,7 @@ parser.add_argument('--gilt_nIter', type=int, default=1)
 parser.add_argument('--mcf_enabled', action='store_true')
 parser.add_argument('--mcf_eps', type=float, default=1e-16)
 parser.add_argument('--mcf_max_iter', type=int, default=200)
+parser.add_argument('--hotrg_sanity_check', action='store_true')
 parser.add_argument('--version', type=int, default=1)
 parser.add_argument('--device', type=str, default='cuda:0')
 

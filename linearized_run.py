@@ -48,7 +48,7 @@ from HOTRGZ2 import HOTRG_layers
 
 
 
-options1,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
+options1,params,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
 
 iLayer=options['iLayer']
 T=Ts[iLayer]

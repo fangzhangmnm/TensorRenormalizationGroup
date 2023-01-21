@@ -198,55 +198,55 @@ def _forward_layer(Ta,Tb,layer:HOTRGLayer):
     return T
 
 
-def _forward_layer_2D(Ta,Tb,layer:HOTRGLayer):
-    #         h0
-    #         g00                   
-    #    /g02-Ta-g03\       0       2
-    #h2-w     |g     w-h3  2T3  -> 0T'1  
-    #    \g12-Tb-g13/       1       3
-    #         g11                      
-    #         h1
+# def _forward_layer_2D(Ta,Tb,layer:HOTRGLayer):
+#     #         h0
+#     #         g00                   
+#     #    /g02-Ta-g03\       0       2
+#     #h2-w     |g     w-h3  2T3  -> 0T'1  
+#     #    \g12-Tb-g13/       1       3
+#     #         g11                      
+#     #         h1
     
-    ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
-    assert T0Shape==Ta.shape and T0Shape==Tb.shape
-    if gg:
-        Ta=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Ta,*gg[0])
-        Tb=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tb,*gg[1])
-    if dimR:
-        P=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        wP=contract('ab,bij->aij',ww[0],P)
-    else:
-        wP=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
-    Tn=contract('ijkl,jmno,akn,blo->imab',Ta,Tb,wP,wP.conj())
-    if hh:
-        Tn=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tn,*hh)
-    Tn=contract('ijab->abij',Tn)
-    return Tn
+#     ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
+#     assert T0Shape==Ta.shape and T0Shape==Tb.shape
+#     if gg:
+#         Ta=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Ta,*gg[0])
+#         Tb=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tb,*gg[1])
+#     if dimR:
+#         P=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
+#         wP=contract('ab,bij->aij',ww[0],P)
+#     else:
+#         wP=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
+#     Tn=contract('ijkl,jmno,akn,blo->imab',Ta,Tb,wP,wP.conj())
+#     if hh:
+#         Tn=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Tn,*hh)
+#     Tn=contract('ijab->abij',Tn)
+#     return Tn
 
-def _forward_layer_3D(Ta,Tb,layer:HOTRGLayer):
-    #      g|                         5--6
-    #    /g-T1-g\      50      34     |1--2
-    # h-w  g|g  w-h   2T3  -> 0T'1    7| 8|
-    #    \g-T2-g/      14      52      3--4
-    #       |g 
-    ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
-    assert T0Shape==Ta.shape and T0Shape==Tb.shape
-    if gg:
-        Ta=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Ta,*gg[0])
-        Tb=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tb,*gg[1])
-    if dimR:
-        P1=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
-        wP1=contract('ab,bij->aij',ww[0],P1)
-        P2=RepMat(dimR[2][0],dimR[2][1],dimR[2][0],dimR[2][1])
-        wP2=contract('ab,bij->aij',ww[1],P2)
-    else:
-        wP1=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
-        wP2=ww[1].reshape(-1,Ta.shape[4],Tb.shape[4])
-    Tn=contract('ijklmn,jopqrs,akp,blq,cmr,dns->ioabcd',Ta,Tb,wP1,wP1.conj(),wP2,wP2.conj())
-    if hh:
-        Tn=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tn,*hh)
-    Tn=contract('ijabcd->abcdij')
-    return Tn
+# def _forward_layer_3D(Ta,Tb,layer:HOTRGLayer):
+#     #      g|                         5--6
+#     #    /g-T1-g\      50      34     |1--2
+#     # h-w  g|g  w-h   2T3  -> 0T'1    7| 8|
+#     #    \g-T2-g/      14      52      3--4
+#     #       |g 
+#     ww,dimR,gg,hh,T0Shape=layer.ww,layer.dimR,layer.gg,layer.hh,layer.tensor_shape
+#     assert T0Shape==Ta.shape and T0Shape==Tb.shape
+#     if gg:
+#         Ta=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Ta,*gg[0])
+#         Tb=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tb,*gg[1])
+#     if dimR:
+#         P1=RepMat(dimR[1][0],dimR[1][1],dimR[1][0],dimR[1][1])
+#         wP1=contract('ab,bij->aij',ww[0],P1)
+#         P2=RepMat(dimR[2][0],dimR[2][1],dimR[2][0],dimR[2][1])
+#         wP2=contract('ab,bij->aij',ww[1],P2)
+#     else:
+#         wP1=ww[0].reshape(-1,Ta.shape[2],Tb.shape[2])
+#         wP2=ww[1].reshape(-1,Ta.shape[4],Tb.shape[4])
+#     Tn=contract('ijklmn,jopqrs,akp,blq,cmr,dns->ioabcd',Ta,Tb,wP1,wP1.conj(),wP2,wP2.conj())
+#     if hh:
+#         Tn=contract('ijklmn,Ii,Jj,Kk,Ll,Mm,Nn->IJKLMN',Tn,*hh)
+#     Tn=contract('ijabcd->abcdij')
+#     return Tn
 
     
 
@@ -475,6 +475,10 @@ def HOTRG_layer(T1,T2,max_dim,dimR=None,options:dict={},Tref=None):
     else:
         hh=None
     layer.hh=hh
+    if options.get('hotrg_sanity_check'):
+        Tn1= forward_layer(T1old,T2old,layer)
+        assert (Tn-Tn1).abs().max()<1e-6
+
     return Tn,layer
     
     

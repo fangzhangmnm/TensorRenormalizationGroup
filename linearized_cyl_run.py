@@ -4,7 +4,6 @@ if __name__ != '__main__':
 import argparse
 parser = argparse.ArgumentParser()
 
-parser = argparse.ArgumentParser()
 parser.add_argument('--filename', type=str, required=True) # data/tnr_X16_L10
 parser.add_argument('--tensor_path', type=str, required=True) # data/tnr_X16_tensors.pkl
 parser.add_argument('--iLayer', type=int, required=True) # 10
@@ -35,7 +34,7 @@ from ScalingDimensions import get_scaling_dimensions
 from HOTRGZ2 import HOTRG_layers
 
 
-options1,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
+options1,params,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
 
 iLayer=options['iLayer']
 T=Ts[iLayer]

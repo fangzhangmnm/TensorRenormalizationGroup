@@ -26,85 +26,6 @@ def _toP(t):
         return t
 
 
-def mysvd(M,k=10,tol=0,maxiter=500):
-    M=aslinearoperator(M)
-    dim=M.shape[1]
-    k=min(k,min(M.shape))
-    eigvecs,eigvals=[],[]
-    tols=tol if isinstance(tol,list) else [tol]*k
-    maxiters=maxiter if isinstance(maxiter,list) else [maxiter]*k
-    pbar1=tqdm(range(k),leave=False)
-    for j in pbar1:
-        v=np.random.randn(dim);v=v/np.linalg.norm(v)
-        with tqdm(range(maxiters[j]),leave=False) as pbar:
-            for i in pbar:
-                vn=M.rmatvec(M.matvec(v))
-                for u in eigvecs:
-                    vn=vn-u*(u.conj()@vn)
-                if np.linalg.norm(vn)==0:
-                    raise ValueError
-                eig=np.linalg.norm(vn)/np.linalg.norm(v)
-                vn=vn/np.linalg.norm(vn)
-                err=np.linalg.norm(vn-v)
-                v=vn
-                pbar1.set_postfix(eig=eig,err=err)
-                if err<=tols[j]:
-                    pbar.close()
-                    break
-        
-        if err>tols[j]:
-            print('Not Converged! err=',err)
-        print('eig=',eig)
-        eigvecs.append(v)
-        eigvals.append(eig)
-    u=np.array([v/np.linalg.norm(v) for v in [M*v for v in eigvecs]]).T
-    s=np.array(np.abs(eigvals))**.5
-    vh=np.array(eigvecs).conj()
-    return u,s,vh
-
-
-def myeigh(M,k=10,tol=0,maxiter=500,impose_hermitian=True):
-    M=aslinearoperator(M)
-    dim=M.shape[1]
-    k=min(k,min(M.shape))
-    eigvecs,eigvals=[],[]
-    tols=tol if isinstance(tol,list) else [tol]*k
-    maxiters=maxiter if isinstance(maxiter,list) else [maxiter]*k
-    pbar1=tqdm(range(k),leave=False)
-    for j in pbar1:
-        v=np.random.randn(dim);v=v/np.linalg.norm(v)
-        with tqdm(range(maxiters[j]),leave=False) as pbar:
-            for i in pbar:
-                if impose_hermitian:
-                    vn=(M.rmatvec(v)+M.matvec(v))/2
-                else:
-                    vn=M.matvec(v)
-                for u in eigvecs:
-                    vn=vn-u*(u.conj()@vn)
-                if np.linalg.norm(vn)==0:
-                    raise ValueError
-                eig=np.linalg.norm(vn)/np.linalg.norm(v)
-                vn=vn/np.linalg.norm(vn)
-                err=np.linalg.norm(vn-v)
-                v=vn
-                pbar1.set_postfix(eig=eig,err=err)
-                if err<=tols[j]:
-                    pbar.close()
-                    break
-        
-        if err>tols[j]:
-            print('Not Converged! err=',err)
-        print('eig=',eig)
-        eigvecs.append(v)
-        eigvals.append(eig)
-    eigvecs=np.array(eigvecs)
-    eigvals=np.array(eigvals)
-    return eigvals,eigvecs.T
-
-
-#M=np.random.randn(5,4)
-#u,s,vh=mysvd(scipy.sparse.linalg.aslinearoperator(M))
-#print(np.linalg.norm(u@np.diag(s)@vh-M))
 
 
 def wrap_pytorch(func):
@@ -251,6 +172,8 @@ def get_linearized_HOTRG_full_autodiff(T0,options):
         return v
     return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
 
+
+
 def verify_linear_operator(M,tol=1e-9,nTests=20):
     print('checking linearity of M with tol=',tol)
     for i in range(nTests):
@@ -309,3 +232,83 @@ def check_hermicity(M,tol=1e-9,nTests=20):
     print('hermicity is True')
     return True
 
+
+def mysvd(M,k=10,tol=0,maxiter=500):
+    M=aslinearoperator(M)
+    dim=M.shape[1]
+    k=min(k,min(M.shape))
+    eigvecs,eigvals=[],[]
+    tols=tol if isinstance(tol,list) else [tol]*k
+    maxiters=maxiter if isinstance(maxiter,list) else [maxiter]*k
+    pbar1=tqdm(range(k),leave=False)
+    for j in pbar1:
+        v=np.random.randn(dim);v=v/np.linalg.norm(v)
+        with tqdm(range(maxiters[j]),leave=False) as pbar:
+            for i in pbar:
+                vn=M.rmatvec(M.matvec(v))
+                for u in eigvecs:
+                    vn=vn-u*(u.conj()@vn)
+                if np.linalg.norm(vn)==0:
+                    raise ValueError
+                eig=np.linalg.norm(vn)/np.linalg.norm(v)
+                vn=vn/np.linalg.norm(vn)
+                err=np.linalg.norm(vn-v)
+                v=vn
+                pbar1.set_postfix(eig=eig,err=err)
+                if err<=tols[j]:
+                    pbar.close()
+                    break
+        
+        if err>tols[j]:
+            print('Not Converged! err=',err)
+        print('eig=',eig)
+        eigvecs.append(v)
+        eigvals.append(eig)
+    u=np.array([v/np.linalg.norm(v) for v in [M*v for v in eigvecs]]).T
+    s=np.array(np.abs(eigvals))**.5
+    vh=np.array(eigvecs).conj()
+    return u,s,vh
+
+
+def myeigh(M,k=10,tol=0,maxiter=500,impose_hermitian=True):
+    M=aslinearoperator(M)
+    dim=M.shape[1]
+    k=min(k,min(M.shape))
+    eigvecs,eigvals=[],[]
+    tols=tol if isinstance(tol,list) else [tol]*k
+    maxiters=maxiter if isinstance(maxiter,list) else [maxiter]*k
+    pbar1=tqdm(range(k),leave=False)
+    for j in pbar1:
+        v=np.random.randn(dim);v=v/np.linalg.norm(v)
+        with tqdm(range(maxiters[j]),leave=False) as pbar:
+            for i in pbar:
+                if impose_hermitian:
+                    vn=(M.rmatvec(v)+M.matvec(v))/2
+                else:
+                    vn=M.matvec(v)
+                for u in eigvecs:
+                    vn=vn-u*(u.conj()@vn)
+                if np.linalg.norm(vn)==0:
+                    raise ValueError
+                eig=np.linalg.norm(vn)/np.linalg.norm(v)
+                vn=vn/np.linalg.norm(vn)
+                err=np.linalg.norm(vn-v)
+                v=vn
+                pbar1.set_postfix(eig=eig,err=err)
+                if err<=tols[j]:
+                    pbar.close()
+                    break
+        
+        if err>tols[j]:
+            print('Not Converged! err=',err)
+        print('eig=',eig)
+        eigvecs.append(v)
+        eigvals.append(eig)
+    eigvecs=np.array(eigvecs)
+    eigvals=np.array(eigvals)
+    return eigvals,eigvecs.T
+
+
+#M=np.random.randn(5,4)
+#u,s,vh=mysvd(scipy.sparse.linalg.aslinearoperator(M))
+#print(np.linalg.norm(u@np.diag(s)@vh-M))

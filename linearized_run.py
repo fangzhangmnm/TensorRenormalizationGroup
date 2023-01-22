@@ -8,6 +8,7 @@ parser.add_argument('--filename', type=str, required=True) # data/tnr_X16_L10
 parser.add_argument('--tensor_path', type=str, required=True) # data/tnr_X16_tensors.pkl
 parser.add_argument('--iLayer', type=int, required=True) # 10
 parser.add_argument('--linearized_full', action='store_true')
+parser.add_argument('--linearized_use_jax', action='store_true')
 parser.add_argument('--gilt_enabled', action='store_true')
 parser.add_argument('--gilt_eps', type=float, default=8e-7)
 parser.add_argument('--gilt_nIter', type=int, default=1)
@@ -32,24 +33,28 @@ from opt_einsum import contract # idk why but its required to avoid bug in contr
 import torch
 import numpy as np
 
+device=torch.device(options['device'])
 if options['device']=='cpu':
     torch.set_default_tensor_type(torch.DoubleTensor)
 else:  
     torch.set_default_tensor_type(torch.cuda.DoubleTensor)
-device=torch.device(options['device'])
-torch.cuda.set_device(device)
+    torch.cuda.set_device(device)
+
+
 
 
 import os
 from scipy.sparse.linalg import eigs,eigsh,svds
 from linearized import mysvd, myeigh, myeig_old
-from linearized import get_linearized_HOTRG_autodiff, get_linearized_HOTRG_full_autodiff, get_linearized_cylinder, verify_linear_operator, check_hermicity
+from linearized import get_linearized_HOTRG_autodiff, get_linearized_HOTRG_full_autodiff
+from linearized import get_linearized_HOTRG_jax, get_linearized_HOTRG_full_jax
+from linearized import get_linearized_cylinder, verify_linear_operator, check_hermicity
 from ScalingDimensions import get_scaling_dimensions
 from HOTRGZ2 import HOTRG_layers
 
 
 
-
+print('loading tensors...')
 options1,params,layers,Ts,logTotals=torch.load(options['tensor_path'],map_location=device)
 
 iLayer=options['iLayer']
@@ -57,12 +62,20 @@ T=Ts[iLayer]
 assert T.shape[0]==T.shape[1]
 options['max_dim']=T.shape[0]
 
+del options1,params,layers,Ts,logTotals
+torch.cuda.empty_cache()
 
-if not options['linearized_full']:
-    layers_sel=HOTRG_layers(T,max_dim=T.shape[0],nLayers=2,options=options)
-    Mr=get_linearized_HOTRG_autodiff(T,layers_sel)
+if options['linearized_full']:
+    if options['linearized_use_jax']:
+        Mr=get_linearized_HOTRG_full_jax(T,options)
+    else:
+        Mr=get_linearized_HOTRG_full_autodiff(T,options)
 else:
-    Mr=get_linearized_HOTRG_full_autodiff(T,options)
+    layers_sel=HOTRG_layers(T,max_dim=T.shape[0],nLayers=2,options=options)
+    if options['linearized_use_jax']:
+        Mr=get_linearized_HOTRG_jax(T,layers_sel)
+    else:
+        Mr=get_linearized_HOTRG_autodiff(T,layers_sel)
 
 if options['svd_sanity_check']:
     print('sanity check')

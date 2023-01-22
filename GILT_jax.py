@@ -6,17 +6,15 @@
 # https://github.com/Gilt-TNR/Gilt-TNR
 # https://github.com/Gilt-TNR/Gilt-TNR/blob/master/GiltTNR3D.py
 
-import torch
 from tqdm.auto import tqdm
 import numpy as np
 from opt_einsum import contract
 import itertools as itt
 from dataclasses import dataclass
-def _toN(t):
-    return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
-#from safe_svd import svd,sqrt # TODO is it necessary???
-from torch.linalg import svd
-from torch import sqrt
+from numpy.linalg import svd
+from numpy import sqrt
+# def _toN(t):
+#     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 
 # Basic idea:
 
@@ -30,8 +28,8 @@ from torch import sqrt
 
 #svd,sqrt=torch.linalg.svd,torch.sqrt
 
-if torch.get_default_dtype() not in {torch.float64}:
-    print('[GILT] Warning! float32 is not precise enough, leads to bad RG behavior')
+if np.array([1., 2.]).dtype not in {np.dtype('float64')}:
+    print('[GILT_jax] Warning! float32 is not precise enough, leads to bad RG behavior')
 
 
 @dataclass
@@ -50,7 +48,7 @@ recorded_S=[]
     
 def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
     d=EEh.shape[0]
-    uu,vvh=torch.eye(d),torch.eye(d)
+    uu,vvh=np.eye(d),np.eye(d)
     for _iter in range(options.nIter):
         if _iter==0:
             U,S,_=svd(EEh.reshape(d**2,d**2))
@@ -59,9 +57,9 @@ def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
             U,S,_=svd(uvUS)
         U=U.reshape(d,d,d**2)
         t=contract('aac->c',U)
-        Sn=S/torch.max(S)
+        Sn=S/np.max(S)
         if options.record_S:
-            recorded_S.append(_toN(Sn))
+            recorded_S.append(Sn)
         t=t*(Sn**2/(Sn**2+options.eps**2))
         Q=contract('abc,c->ab',U,t)
         if options.split_insertion:
@@ -70,7 +68,7 @@ def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
             u,vh=u@s,s@vh
         else:
             # not make sense, introduces numerical error!
-            u,vh=Q,torch.eye(d)
+            u,vh=Q,np.eye(d)
         uu,vvh=uu@u,vh@vvh
     return uu,vvh
     
@@ -194,7 +192,7 @@ def GILT_HOTRG2D(T1,T2,options:GILT_options=GILT_options()):
     u2,vh2=GILT_Square_one([T2,T2,T1,T1],leg='12',options=options)
     T2=contract(contract_path,T2,vh2,u2.T)
     
-    I=torch.eye(T1.shape[0])
+    I=np.eye(T1.shape[0])
 
     gg=[[I,I,vh1,u1.T],[I,I,vh2,u2.T]]
     #Y1=contract('ijkl,Ii,Jj,Kk,Ll->IJKL',Y1,*gg[0])
@@ -267,7 +265,7 @@ def GILT_HOTRG3D(T1,T2,options:GILT_options=GILT_options()):
         u,vh=GILT_Cube_one(T12s,leg='48',options=options)
         T2,g7,g8=contract(contract45,T2,vh,u.T),vh@g7,u.T@g8
     
-    I=torch.eye(T1.shape[0])
+    I=np.eye(T1.shape[0])
 
     gg=[[I,I,g1,g2,g3,g4],[I,I,g5,g6,g7,g8]]
     
@@ -307,7 +305,7 @@ def GILT_HOSVD_layer(T1,T2,max_dim,dimR=None,options:GILT_options=GILT_options()
 #============= GILT On TRG=============
 
 from TRG import TRG_AB
-from HOTRGZ2 import gauge_invariant_norm
+from HOTRGZ2_jax import gauge_invariant_norm
 
 
 def GILT_SquareA(A,options:GILT_options=GILT_options()):

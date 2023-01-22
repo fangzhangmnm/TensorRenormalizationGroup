@@ -91,12 +91,13 @@ def get_linearized_cylinder(T0):
     return LinearOperator(shape=(dimT,dimT),matvec=matvec,rmatvec=rmatvec)
     
 import jax
+from HOTRGZ2_jax import forward_layer as forward_layer_jax,HOTRGLayer as HOTRGLayer_jax, HOTRG_layer as HOTRG_layer_jax
 from copy import deepcopy
 
-def get_linearized_HOTRG_autodiff_jax(T0,layers):
+def get_linearized_HOTRG_jax(T0,layers):
     dimT=prod(T0.shape)
     T0=_toP(T0)
-    layers=deepcopy(layers)
+    layers=[HOTRGLayer_jax(**{k:_toP(v) for k,v in layer.__dict__.items()}) for layer in layers]
     for layer in layers:
         if layer.ww: layer.ww=_toP(layer.ww)
         if layer.gg: layer.gg=_toP(layer.gg)
@@ -107,7 +108,7 @@ def get_linearized_HOTRG_autodiff_jax(T0,layers):
     def forward_layers(v):
         v=v.reshape(T0.shape)
         for layer in layers:
-            v=forward_layer(v,v,layer)
+            v=forward_layer_jax(v,v,layer)
         return v.reshape(-1)
     v0=T0.reshape(-1)
     
@@ -115,6 +116,22 @@ def get_linearized_HOTRG_autodiff_jax(T0,layers):
     return LinearOperator(shape=(dimT,dimT),matvec=M)
 
 
+def get_linearized_HOTRG_full_jax(T0,options):
+    dimT=prod(T0.shape)
+    T0=_toP(T0)
+
+    pbar=tqdm()
+    print(f'dimension: {dimT}x{dimT}')
+    @wrap_pbar(pbar)
+    def forward_layers(v):
+        v=v.reshape(T0.shape)
+        for i in range(len(T0.shape)//2):
+            v,_=HOTRG_layer_jax(v,v,max_dim=T0.shape[0],options=options,Tref=v)
+        return v.reshape(-1)
+    v0=T0.reshape(-1)
+
+    v1, M = jax.linearize(forward_layers, v0)
+    return LinearOperator(shape=(dimT,dimT),matvec=M)
 
 from functorch import jvp,vjp
 

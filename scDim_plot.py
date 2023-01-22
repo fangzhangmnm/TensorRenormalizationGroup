@@ -34,6 +34,8 @@ torch.cuda.set_device(device)
 
 from ScalingDimensions import show_scaling_dimensions,show_diff,show_effective_rank
 from HOTRGZ2 import HOTRGLayer
+
+print('loading tensors...')
 options1, params, layers, Ts, logTotals = torch.load(options['tensor_path'],map_location=device)
 
 if isinstance(layers[0],HOTRGLayer):

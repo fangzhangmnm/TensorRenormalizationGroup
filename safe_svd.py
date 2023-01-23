@@ -88,10 +88,6 @@ if __name__=='__main__':
     input = torch.rand(20, 16, dtype=torch.float64, requires_grad=True)
     assert torch.autograd.gradcheck(sqrt, input, eps=1e-6, atol=1e-4)
     assert torch.autograd.gradcheck(svd, input, eps=1e-6, atol=1e-4)
-    print('testing jvp')
-    from functorch import jvp
-    value, grad=jvp(svd,(input,),(torch.randn_like(input),))
-
     print('passed')
 
 

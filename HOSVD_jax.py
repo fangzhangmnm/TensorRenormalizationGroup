@@ -1,9 +1,11 @@
-import numpy as np
+import jax.numpy as np
 from tqdm.auto import tqdm as tqdm
 from opt_einsum import contract
 
 #from safe_svd import svd,sqrt # TODO is it necessary???
-from numpy.linalg import svd
+from jax.numpy.linalg import svd as _svd
+def svd(A):
+    return _svd(A,full_matrices=False)
 
 
 import importlib

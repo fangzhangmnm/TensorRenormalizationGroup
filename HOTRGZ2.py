@@ -359,7 +359,7 @@ def forward_coordinate(coords):
 
 
 def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
-        layers:'list[HOTRGLayer]',checkerboard=False,use_checkpoint=False,cached_Ts=None):
+        layers:'list[HOTRGLayer]',checkerboard=False,use_checkpoint=False,cached_Ts=None,user_tqdm=True):
     spacial_dim=len(T0.shape)//2
     nLayers=len(layers)
     lattice_size=get_lattice_size(nLayers,spacial_dim=spacial_dim)
@@ -367,7 +367,8 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
     assert all(positions[i]!=positions[j] for i,j in itt.combinations(range(len(positions)),2))
     assert len(positions)==len(T0_ops)
     T,T_ops,logTotal=T0,T0_ops.copy(),0
-    for ilayer,layer in tqdm(list(enumerate(layers)),leave=False):
+    _tqdm=tqdm if user_tqdm else lambda x,leave:x
+    for ilayer,layer in _tqdm(list(enumerate(layers)),leave=False):
         norm=gauge_invariant_norm(T)
         logTotal=2*(logTotal+norm.log())
         T,T_ops=T/norm,[T_op/norm for T_op in T_ops]

@@ -1,11 +1,14 @@
 from opt_einsum import contract
-from numpy.linalg import svd, inv
-from numpy import sqrt
+from jax.numpy.linalg import  inv
+from jax.numpy import sqrt
 from tqdm.auto import tqdm
 from dataclasses import dataclass
 import dataclasses
-import numpy as np
-from scipy.linalg import expm as matrix_exp
+import jax.numpy as np
+from jax.scipy.linalg import expm
+from jax.numpy.linalg import svd as _svd
+def svd(A):
+    return _svd(A,full_matrices=False)
 
 
 
@@ -56,10 +59,10 @@ def minimal_canonical_form(T:np.ndarray,options:MCF_options=MCF_options())->'tup
                 rho1=contract_all_legs_but_one(T,T.conj(),2*k)
                 rho2=contract_all_legs_but_one(T,T.conj(),2*k+1).T
                 rho_diff=rho1-rho2
-                assert (rho_diff-rho_diff.T.conj()).norm()/tr_rho<1e-7
-                total_diff+=rho_diff.norm()**2/tr_rho
-                g1=matrix_exp(-rho_diff/(4*spacial_dim*tr_rho))
-                g2=matrix_exp(rho_diff/(4*spacial_dim*tr_rho)).T
+                assert np.linalg.norm(rho_diff-rho_diff.T.conj())/tr_rho<1e-7
+                total_diff+=np.linalg.norm(rho_diff)**2/tr_rho
+                g1=expm(-rho_diff/(4*spacial_dim*tr_rho))
+                g2=expm(rho_diff/(4*spacial_dim*tr_rho)).T
                 hh[2*k]=g1@hh[2*k]
                 hh[2*k+1]=g2@hh[2*k+1]
                 T=apply_matrix_to_leg(T,g1,2*k)
@@ -80,13 +83,13 @@ def fix_unitary_gauge(T,Tref,options:MCF_options=MCF_options()):
             rho1=contract_all_legs_but_one(T,Tref.conj(),2*k)
             rho2=contract_all_legs_but_one(T,Tref.conj(),2*k).T
             rho_diff=rho1-rho2
-            print(rho_diff.norm()/tr_rho)
-            assert (rho_diff+rho_diff.T.conj()).norm()/tr_rho<1e-7
+            print(np.linalg.norm(rho_diff)/tr_rho)
+            assert np.linalg.norm(rho_diff+rho_diff.T.conj())/tr_rho<1e-7
             rho_diff=(rho_diff-rho_diff.T.conj())/2
-            total_diff+=rho_diff.norm()**2/tr_rho
-            g1=matrix_exp(-rho_diff/(4*spacial_dim*tr_rho))
+            total_diff+=np.linalg.norm(rho_diff)**2/tr_rho
+            g1=expm(-rho_diff/(4*spacial_dim*tr_rho))
             g2=g1
-            #g2=matrix_exp(rho_diff/(4*spacial_dim*tr_rho))
+            #g2=expm(rho_diff/(4*spacial_dim*tr_rho))
             hh[2*k]=g1@hh[2*k]
             hh[2*k+1]=g2@hh[2*k+1]
             T=apply_matrix_to_leg(T,g1,2*k)

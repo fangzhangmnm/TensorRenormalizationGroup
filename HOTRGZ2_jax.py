@@ -5,7 +5,7 @@ import functools
 from collections import namedtuple
 from dataclasses import dataclass
 import math
-import numpy as np
+import jax.numpy as np
 import copy
 
 
@@ -415,12 +415,12 @@ def permute_tensor_axis(T):
 #==================
 
 import importlib
-import HOSVD,GILT_jax,fix_gauge
-importlib.reload(HOSVD)
+import HOSVD_jax,GILT_jax,fix_gauge_jax
+importlib.reload(HOSVD_jax)
 importlib.reload(GILT_jax)
-importlib.reload(fix_gauge)
+importlib.reload(fix_gauge_jax)
 
-from HOSVD import HOSVD_layer
+from HOSVD_jax import HOSVD_layer
 from GILT_jax import GILT_HOTRG,GILT_options
 from fix_gauge_jax import minimal_canonical_form,fix_unitary_gauge,fix_phase,MCF_options
     

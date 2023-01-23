@@ -7,12 +7,14 @@
 # https://github.com/Gilt-TNR/Gilt-TNR/blob/master/GiltTNR3D.py
 
 from tqdm.auto import tqdm
-import numpy as np
+import jax.numpy as np
 from opt_einsum import contract
 import itertools as itt
 from dataclasses import dataclass
-from numpy.linalg import svd
-from numpy import sqrt
+from jax.numpy import sqrt
+from jax.numpy.linalg import svd as _svd
+def svd(A):
+    return _svd(A,full_matrices=False)
 # def _toN(t):
 #     return t.detach().cpu().tolist() if isinstance(t,torch.Tensor) else t
 
@@ -29,6 +31,7 @@ from numpy import sqrt
 #svd,sqrt=torch.linalg.svd,torch.sqrt
 
 if np.array([1., 2.]).dtype not in {np.dtype('float64')}:
+    print(np.array([1., 2.]).dtype)
     print('[GILT_jax] Warning! float32 is not precise enough, leads to bad RG behavior')
 
 
@@ -64,7 +67,7 @@ def GILT_getuvh(EEh,options:GILT_options=GILT_options()):
         Q=contract('abc,c->ab',U,t)
         if options.split_insertion:
             u,s,vh=svd(Q) # is it necessary to split?
-            s=sqrt(s).diag()
+            s=np.diag(sqrt(s))
             u,vh=u@s,s@vh
         else:
             # not make sense, introduces numerical error!
@@ -143,7 +146,7 @@ def GILT_Square_one(As,leg,options:GILT_options=GILT_options()):
     Ais=replace_leg_with_u_and_v(Ais,leg)
     EEh=GILT_getEEh(As,Ais)
     u,vh=GILT_getuvh(EEh,options=options)
-    assert not u.isnan().any() and not vh.isnan().any()
+    assert not np.any(np.isnan(u)) and not np.any(np.isnan(vh))
     return u,vh
     
 def GILT_Cube_one(As,leg,options:GILT_options=GILT_options()):

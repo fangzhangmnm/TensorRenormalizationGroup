@@ -104,11 +104,11 @@ def get_linearized_HOTRG_jax(T0,layers):
         if layer.hh: layer.hh=_toP(layer.hh)
     pbar=tqdm()
     print(f'dimension: {dimT}x{dimT}')
-    @wrap_pbar(pbar)
     def forward_layers(v):
         v=v.reshape(T0.shape)
         for layer in layers:
             v=forward_layer_jax(v,v,layer)
+        pbar.update(1)
         return v.reshape(-1)
     v0=T0.reshape(-1)
     
@@ -127,6 +127,7 @@ def get_linearized_HOTRG_full_jax(T0,options):
         v=v.reshape(T0.shape)
         for i in range(len(T0.shape)//2):
             v,_=HOTRG_layer_jax(v,v,max_dim=T0.shape[0],options=options,Tref=v)
+        pbar.update(1)
         return v.reshape(-1)
     v0=T0.reshape(-1)
 

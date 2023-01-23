@@ -39,6 +39,8 @@ if options['device']=='cpu':
 else:  
     torch.set_default_tensor_type(torch.cuda.DoubleTensor)
     torch.cuda.set_device(device)
+import jax
+jax.config.update("jax_enable_x64", True)
 
 
 

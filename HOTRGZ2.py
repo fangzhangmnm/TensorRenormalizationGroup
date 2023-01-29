@@ -363,7 +363,7 @@ def forward_observable_tensors(T0,T0_ops:list,positions:'list[tuple[int]]',
     spacial_dim=len(T0.shape)//2
     nLayers=len(layers)
     lattice_size=get_lattice_size(nLayers,spacial_dim=spacial_dim)
-    assert all(isinstance(c,int) and 0<=c and c<s for coords in positions for c,s in zip(coords,lattice_size))
+    assert all(isinstance(c,int) and 0<=c and c<s for coords in positions for c,s in zip(coords,lattice_size)),"coordinates must be integers in the range [0,lattice_size)\n"+str(positions)+" "+str(lattice_size)
     assert all(positions[i]!=positions[j] for i,j in itt.combinations(range(len(positions)),2))
     assert len(positions)==len(T0_ops)
     T,T_ops,logTotal=T0,T0_ops.copy(),0
@@ -419,7 +419,8 @@ def trace_tensor(T):
     eq={4:'aabb->',6:'aabbcc->'}[len(T.shape)]
     return contract(eq,T)
 
-def trace_two_tensors(T):
+def trace_two_tensors(T,T1=None):
+    T1=T if T1 is None else T1
     eq={4:'abcc,badd->',6:'abccdd,baeeff->'}[len(T.shape)]
     return contract(eq,T,T)
  

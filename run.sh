@@ -1,3 +1,19 @@
+# Ising2D 0.44068679350977147
+python find_critical_temp_run.py --filename data/hotrg_X16_Tc --nLayers 60 --max_dim 16 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization
+python find_critical_temp_run.py --filename data/hotrg_gilt_X16_Tc --nLayers 60 --max_dim 16 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled --mcf_enabled
+# 0.44068255424499514
+python find_critical_temp_run.py --filename data/hotrg_gilt_X24_Tc --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled --mcf_enabled
+# 0.44068381309509275
+
+#Ising3D ~0.2216544
+python find_critical_temp_run.py --filename data/ising3d_hotrg_X8_Tc --nLayers 60 --max_dim 8 --model Ising3D --param_name beta --param_min 0.20 --param_max 0.24 --observable_name magnetization
+# 0.22138627052307125
+python find_critical_temp_run.py --filename data/ising3d_hotrg_X9_Tc --nLayers 60 --max_dim 9 --model Ising3D --param_name beta --param_min 0.20 --param_max 0.24 --observable_name magnetization
+# 0.22182593345642088
+python find_critical_temp_run.py --filename data/ising3d_hotrg_X10_Tc --nLayers 60 --max_dim 10 --model Ising3D --param_name beta --param_min 0.20 --param_max 0.24 --observable_name magnetization
+# 0.2221596431732178
+
+
 python HOTRG_run.py --filename data/hotrg_gilt_X16 --nLayers 60 --max_dim 16 --gilt_enabled --mcf_enabled
 python HOTRG_run.py --filename data/hotrg_gilt_X24 --nLayers 60 --max_dim 24 --gilt_enabled --mcf_enabled
 python HOTRG_run.py --filename data/hotrg_gilt_X32 --nLayers 60 --max_dim 32 --gilt_enabled --mcf_enabled
@@ -10,6 +26,8 @@ python HOTRG_run.py --filename data/hotrg_X44 --nLayers 60 --max_dim 44 --mcf_en
 
 python TNR_run.py --filename data/tnr_X16 --nLayers 10 --tnr_max_dim_TRG 16 --tnr_max_dim_TNR 8 --device cuda:1
 python TNR_run.py --filename data/tnr_X24 --nLayers 10 --tnr_max_dim_TRG 24 --tnr_max_dim_TNR 12 --device cuda:1
+
+python HOTRG_run.py --filename data/ising3d_hotrg_X8 --model Ising3D --nLayers 60 --max_dim 16 --mcf_enabled
 
 
 python scDim_plot.py --filename data/hotrg_gilt_X24 --tensor_path data/hotrg_gilt_X24.pkl --is_HOTRG

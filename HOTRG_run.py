@@ -7,6 +7,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--filename', type=str, required=True) # data/hotrg_gilt_X24
 parser.add_argument('--nLayers', type=int, required=True) # 60
 parser.add_argument('--max_dim', type=int, required=True) # 24
+parser.add_argument('--model', type=str, required=True) # 'Ising2D'
+parser.add_argument('--params', type=str, default=None)
+parser.add_argument('--params_file', type=str, default=None)
 parser.add_argument('--gilt_enabled', action='store_true')
 parser.add_argument('--gilt_eps', type=float, default=8e-7)
 parser.add_argument('--gilt_nIter', type=int, default=1)
@@ -36,10 +39,20 @@ torch.cuda.set_device(device)
 
 
 from HOTRGZ2 import HOTRG_layers
-from TNModels import Ising2D
+from TNModels import Models
 
-params=Ising2D.get_default_params()
-model=Ising2D(params)
+Model=Models[options['model']]
+params=Model.get_default_params()
+if options['params'] is not None:
+    import json
+    params1=options['params']
+    params1=json.loads(params1)
+    params.update(params1)
+if options['params_file'] is not None:
+    params1=torch.load(options['params_file'])
+    params.update(params1)
+
+model=Model(params)
 T0=model.get_T0()
 
 layers,Ts,logTotals=HOTRG_layers(T0,

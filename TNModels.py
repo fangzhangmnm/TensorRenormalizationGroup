@@ -16,8 +16,6 @@ class TNModel:
         params={k:(params[k] if k in params else v) for k,v in self.get_default_params().items()}
         self.params={k:torch.as_tensor(v).type(torch.get_default_dtype()) for k,v in params.items()}
 
-ObservableInfo=namedtuple("ObservableInfo",["name","T0","checkerboard"])
-
 @_register_model
 class Ising2D(TNModel):
     @staticmethod 
@@ -40,7 +38,9 @@ class Ising2D(TNModel):
         return ((1,1),)*self.spacial_dim if Z2 else ((2,0),)*self.spacial_dim
     
     def get_observables(self):
-        yield ObservableInfo("magnetization",self.get_SZT0(),False)
+        return {
+            'magnetization':(self.get_SZT0(),False),
+        }
     
     def get_SZT0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -97,7 +97,9 @@ class Ising3D(TNModel):
         return ((1,1),)*self.spacial_dim if Z2 else ((2,0),)*self.spacial_dim
     
     def get_observables(self):
-        yield ObservableInfo("magnetization",self.get_SZT0(),False)
+        return {
+            'magnetization':(self.get_SZT0(),False),
+        }
     
     def get_SZT0(self):
         beta,h=self.params['beta'],self.params['h']
@@ -177,9 +179,11 @@ class AKLT2D(TNModel):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
 
     def get_observables(self):
-        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
-        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
-        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
+        return {
+            'magnetizationX':(self.get_ST0(0),False),
+            'magnetizationY':(self.get_ST0(1),False),
+            'magnetizationZ':(self.get_ST0(2),True),
+        }
         
     def get_T(self,op):
         projector=get_CG_no_normalization(2)
@@ -212,9 +216,11 @@ class AKLT2DStrange(TNModel):
         return ((2,0),)*self.spacial_dim
 
     def get_observables(self):
-        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
-        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
-        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
+        return {
+            'magnetizationX':(self.get_ST0(0),False),
+            'magnetizationY':(self.get_ST0(1),False),
+            'magnetizationZ':(self.get_ST0(2),True),
+        }
         
     def get_T(self,op):
         projector=get_CG_no_normalization(2)
@@ -246,9 +252,11 @@ class AKLT3D(TNModel):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
         
     def get_observables(self):
-        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
-        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
-        yield ObservableInfo("magnetizationZ",self.get_ST0(2),True)
+        return {
+            'magnetizationX':(self.get_ST0(0),False),
+            'magnetizationY':(self.get_ST0(1),False),
+            'magnetizationZ':(self.get_ST0(2),True),
+        }
     
     def get_T(self,op):
         projector=get_CG_no_normalization(3)
@@ -280,9 +288,11 @@ class AKLTHoneycomb(TNModel):
         return ((3,1),)*self.spacial_dim if Z2 else ((4,0),)*self.spacial_dim
         
     def get_observables(self):
-        yield ObservableInfo("magnetizationX",self.get_ST0(0),False)
-        yield ObservableInfo("magnetizationY",self.get_ST0(1),False)
-        yield ObservableInfo("magnetizationZ",self.get_ST0(2),False)
+        return {
+            'magnetizationX':(self.get_ST0(0),False),
+            'magnetizationY':(self.get_ST0(1),False),
+            'magnetizationZ':(self.get_ST0(2),True),
+        }
         
     def get_T(self,ops):
         projector=get_CG_no_normalization(3/2)

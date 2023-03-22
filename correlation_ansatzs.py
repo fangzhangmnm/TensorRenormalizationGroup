@@ -2,6 +2,11 @@ import mpmath
 import numpy as np
 from functools import wraps
 
+def critical_correlation(x,A,delta): #critical temperature
+    return A*x**(-2*delta)
+critical_correlation.eq='{0:.2e}x^(-2 Δ),Δ={1:.4f}'
+critical_correlation.p0=(1,0.1)
+
 def high_temp_correlation(x,A,zeta,delta): #high temperature
     return A*np.exp(-x/zeta)*x**(-2*delta)
 high_temp_correlation.eq='{0:.2e}e^(-x/ζ)/x^(2 Δ),ζ={1:.2e},Δ={2:.4f}'

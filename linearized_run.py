@@ -89,7 +89,7 @@ if options['svd_sanity_check']:
 
 print('calculating spectrum of Mr')
 if options['svd_method']=='svds':
-    assert False, 'should use eigenvalues instead of singular values'
+    print('warning!','should use eigenvalues instead of singular values, svd is not correct')
     ur,sr,_=svds(Mr,k=options['svd_num_eigvecs'])
     # do not give the correct eigenvalues
 elif options['svd_method']=='eigs':
@@ -99,7 +99,7 @@ elif options['svd_method']=='eigsh':
     sr,ur=eigsh(Mr,k=options['svd_num_eigvecs'])
     # should not be used since Mr is not hermitian
 elif options['svd_method']=='mysvd':
-    assert False, 'should use eigenvalues instead of singular values'
+    print('warning!','should use eigenvalues instead of singular values, svd is not correct')
     ur,sr,_=mysvd(Mr,k=options['svd_num_eigvecs'],tol=options['svd_tol'],maxiter=options['svd_max_iter'])
     # similiar results to svds but slower
 elif options['svd_method']=='myeig_old':
@@ -107,19 +107,32 @@ elif options['svd_method']=='myeig_old':
 
 
 print('eigenvalues',sr)
-ur,sr=torch.tensor(ur),torch.tensor(sr)
 # sort the eivenvalues
 
-sr,ur=sr.abs()[sr.abs().argsort(descending=True)],ur[:,sr.abs().argsort(descending=True)]
+#now sr,ur are numpy arrays
+#sr,ur=sr.abs()[sr.abs().argsort(descending=True)],ur[:,sr.abs().argsort(descending=True)]
+#translate it to numpy operations
+sr,ur=sr[np.abs(sr).argsort()[::-1]],ur[:,np.abs(sr).argsort()[::-1]]
 
+print('eigenvalues',sr)
 
 print(options)
 print('scaling dimensions from linearized TRG')
-print(get_scaling_dimensions(sr,scaling=2))
+print(get_scaling_dimensions(torch.as_tensor(sr).abs(),scaling=2))
+
+# ulr=np.zeros_like(ur)
+# for i in range(ur.shape[1]):
+#     #ulr[:,i]=Mr@ur[:,i]
+#     #calculate the real and imaginary part of the right eigenvector
+#     ulri=Mr@np.real(ur[:,i])+1j*Mr@np.imag(ur[:,i])
+#     ulri=ulri/np.linalg.norm(ulri)
+#     ulr[:,i]=ulri
+
+ur,sr=torch.tensor(ur),torch.tensor(sr)
+
+
 
 filename=options['filename']
-if filename[-4:]!='.pkl':
-    filename+='.pkl'
 
 torch.save((options,sr,ur),filename)
 print('file saved: ',filename)

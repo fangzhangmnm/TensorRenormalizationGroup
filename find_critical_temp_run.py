@@ -121,7 +121,9 @@ while beta_max-beta_min>options['tol']:
 
 
 print('critical temperature found: beta=',beta_new,' reference: ',beta_ref)
-torch.save({param_name:beta_new},options['filename'])
+
+filename=options['filename']
+torch.save({param_name:beta_new},filename)
 
     
     

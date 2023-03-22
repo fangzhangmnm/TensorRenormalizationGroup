@@ -1,0 +1,96 @@
+# Ising2D 0.44068679350977147
+
+python find_critical_temp_run.py --filename data/hotrg_gilt_X30_Tc --nLayers 60 --max_dim 30 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled --mcf_enabled
+
+python find_critical_temp_run.py --filename data/hotrg_X30_Tc --nLayers 60 --max_dim 30 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --mcf_enabled
+
+
+
+python HOTRG_run.py --filename data/hotrg_gilt_X24 --nLayers 60 --max_dim 24 --gilt_enabled --mcf_enabled --model Ising2D --params '{"beta":0.44068381309509275}'
+python HOTRG_run.py --filename data/hotrg_X24 --nLayers 60 --max_dim 24 --mcf_enabled  --model Ising2D --params '{"beta":0.44069609642028806}'
+
+
+python scDim_plot.py --filename data/hotrg_gilt_X24 --tensor_path data/hotrg_gilt_X24.pkl --is_HOTRG
+python scDim_plot.py --filename data/hotrg_X24 --tensor_path data/hotrg_X24.pkl --is_HOTRG
+
+python linearized_cyl_run.py --filename data/hotrg_gilt_X24_cyl_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --svd_num_eigvecs 32
+# 0.0000, 0.1256, 1.0059, 1.1320, 1.1320, 2.0146, 2.0151, 2.0165, 2.0166,
+# 2.1411, 2.1463, 2.1471, 3.0289, 3.0372, 3.0375, 3.0377, 3.0421, 3.1534,
+# 3.1535, 3.1587, 3.1587, 3.1787, 3.1788, 4.0380, 4.0466, 4.0476, 4.0511,
+# 4.0515, 4.0815, 4.0840, 4.0842, 4.0856
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled  --svd_num_eigvecs 32
+# 0.0000, 0.1275, 1.0027, 1.1269, 1.1448, 1.9985, 2.0004, 2.0042, 2.0434,
+# 2.1215, 2.1981, 2.2049, 2.5006, 2.6803, 2.6884, 2.7914, 2.8247, 2.8255,
+# 2.8467, 2.8467, 3.0117, 3.0952, 3.1032, 3.1032, 3.1158, 3.1158, 3.1594,
+# 3.1594, 3.2014, 3.2044, 3.2044, 3.2255
+
+
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --svd_num_eigvecs 32
+# 0.0000, 0.1292, 1.0350, 1.1553, 1.1560, 2.0125, 2.0135, 2.0167, 2.0553,
+# 2.0567, 2.0951, 2.1714, 2.2281, 2.2281, 2.2517, 2.2517, 2.3449, 2.3449,
+# 2.3704, 2.3818, 2.3951, 2.4809, 2.4948, 2.5126, 2.5204, 2.5379, 2.5427,
+# 2.5525, 2.6167, 2.6526, 2.6682, 2.6788
+
+
+python linearized_cyl_run.py --filename data/hotrg_X24_cyl_L20 --tensor_path data/hotrg_X24.pkl --iLayer 20 --svd_num_eigvecs 32
+# 0.0000, 0.1217, 1.0085, 1.1422, 1.1422, 2.0496, 2.0525, 2.0701, 2.0701,
+# 2.1795, 2.2202, 2.2752, 2.9658, 2.9680, 2.9680, 2.9707, 3.1250, 3.1269,
+# 3.1308, 3.1308, 3.1360, 3.1625, 3.2200, 3.2200, 3.2411, 3.2411, 3.2661,
+# 3.2898, 3.2898, 3.3869, 3.3869, 3.4483
+python linearized_run.py --filename data/hotrg_X24_lTRG_L20 --tensor_path data/hotrg_X24.pkl --iLayer 20 --mcf_enabled --svd_num_eigvecs 32
+# 0.0000, 0.1266, 1.0836, 1.1857, 1.1911, 2.0098, 2.0936, 2.1000, 2.1085,
+# 2.1085, 2.1140, 2.1140, 2.1165, 2.1165, 2.1251, 2.1251, 2.1430, 2.1430,
+# 2.1463, 2.1463, 2.1653, 2.1653, 2.1883, 2.1926, 2.1926, 2.1961, 2.1961,
+# 2.1982, 2.1982, 2.2196, 2.2196, 2.2305
+
+# python linearized_cyl_run.py --filename data/hotrg_gilt_X24_cyl_L30 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 30 --svd_num_eigvecs 32
+# # 0.0000, 0.1261, 1.0090, 1.1353, 1.1354, 2.0208, 2.0212, 2.0227, 2.0228,
+# # 2.1478, 2.1528, 2.1536, 3.0382, 3.0466, 3.0469, 3.0473, 3.0516, 3.1632,
+# # 3.1635, 3.1685, 3.1685, 3.1885, 3.1888, 4.0504, 4.0593, 4.0600, 4.0639,
+# # 4.0641, 4.0944, 4.0970, 4.0974, 4.0988
+# python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L30 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 30 --mcf_enabled --gilt_enabled --svd_num_eigvecs 32
+# # 0.0000, 0.1276, 1.0024, 1.1264, 1.1444, 1.9984, 2.0011, 2.0035, 2.0442,
+# # 2.1201, 2.1974, 2.2041, 2.4995, 2.6826, 2.6826, 2.7900, 2.8226, 2.8250,
+# # 2.8470, 2.8470, 3.0132, 3.0944, 3.1041, 3.1041, 3.1177, 3.1177, 3.1625,
+# # 3.1625, 3.2028, 3.2028, 3.2032, 3.2245
+
+
+
+
+
+
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L10 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 10 --mcf_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L10 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 10 --mcf_enabled --gilt_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled
+
+
+
+
+python linearized_run.py --filename data/hotrg_gilt_X16_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X16.pkl --iLayer 20 --mcf_enabled --gilt_enabled
+python linearized_run.py --filename data/hotrg_gilt_X32_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X32.pkl --iLayer 20 --mcf_enabled --gilt_enabled --device cuda:1
+python linearized_run.py --filename data/hotrg_gilt_X44_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X44.pkl --iLayer 20 --mcf_enabled --gilt_enabled --device cpu
+python linearized_run.py --filename data/tnr_X16_lTRG_L10 --tensor_path data/tnr_X16.pkl --iLayer 10 --mcf_enabled
+python linearized_run.py --filename data/tnr_X16_lTRG_gilt_L10 --tensor_path data/tnr_X16.pkl --iLayer 10 --mcf_enabled --gilt_enabled
+
+
+
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_jax_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled --linearized_use_jax
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_full_jax_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled --linearized_full --linearized_use_jax
+
+
+python linearized_cyl_run.py --filename data/hotrg_gilt_X24_cyl_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20
+
+python linearized_cyl_run.py --filename data/tnr_X16_cyl_L10 --tensor_path data/tnr_X16.pkl --iLayer 10 --svd_num_eigvecs 32
+        # 0.0000, 0.1135, 1.0016, 1.1382, 1.1382, 2.0007, 2.0008, 2.0013, 2.0013,
+        # 2.1146, 2.1372, 2.1381, 2.9999, 2.9999, 3.0002, 3.0022, 3.0024, 3.1128,
+        # 3.1128, 3.1153, 3.1153, 3.1381, 3.1381, 3.9991, 3.9992, 3.9998, 4.0002,
+        # 4.0009, 4.0009, 4.0050, 4.0064, 4.0064
+
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_L15 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 15
+
+
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled --svd_num_eigvecs 24
+python linearized_run.py --filename data/hotrg_gilt_X24_lTRG_gilt_bigger_L20 --tensor_path data/hotrg_gilt_X24.pkl --iLayer 20 --mcf_enabled --gilt_enabled --svd_num_eigvecs 24 --gilt_eps 8e-6
+
+python linearized_run.py --filename data/hotrg_gilt_X16_lTRG_full_L20 --tensor_path data/hotrg_gilt_X16.pkl --iLayer 20 --mcf_enabled --gilt_enabled --linearized_full --svd_num_eigvecs 32

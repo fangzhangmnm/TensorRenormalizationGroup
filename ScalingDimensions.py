@@ -67,7 +67,7 @@ def get_central_charge(spectrum,scaling=np.exp(2*np.pi)):
     return 12*torch.log(spectrum[0])/torch.log(torch.as_tensor(scaling))
 
 def get_scaling_dimensions(spectrum,scaling=np.exp(2*np.pi)):
-    return -torch.log(spectrum/spectrum[0])/torch.log(torch.as_tensor(scaling))
+    return (-torch.log(spectrum/spectrum[0])/torch.log(torch.as_tensor(scaling))).abs()
 
 def get_entanglement_entropy(spectrum):
     spectrum=spectrum/spectrum.sum()
@@ -88,7 +88,7 @@ def get_half_circle_density_matrix(u,loop_length):
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None,filename=None):
+def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2,is_HOTRG=False,reference_scaling_dimensions=None, reference_center_charge=None,filename=None,display=True,stride=1):
     curve=[]
     
     def pad(v):
@@ -98,6 +98,8 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
 
     norms=list(map(gauge_invariant_norm,Ts))
     for iLayer,A in tqdm([*enumerate(Ts)]):
+        if iLayer%stride!=0:
+            continue
         A=fix_normalize(A,is_HOTRG=is_HOTRG,volume_scaling=volume_scaling,norms=norms[:iLayer+1])
 
         if spacial_dim==2:
@@ -115,13 +117,14 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
                 raise NotImplementedError
             u,s,_=get_transfer_matrix_spectrum_3D(A,loop_length=loop_length1)
 
-        s=s**aspect
+
+        ss=s**aspect
         #print(s[:10])
 
-        center_charge=get_central_charge(s)
-        scaling_dimensions=get_scaling_dimensions(s)
-        min_entropy=-torch.max(s/s.sum()).log()
-        transfer_entropy=get_entanglement_entropy(s)
+        center_charge=get_central_charge(ss)
+        scaling_dimensions=get_scaling_dimensions(ss)
+        min_entropy=-torch.max(ss/ss.sum()).log()
+        transfer_entropy=get_entanglement_entropy(ss)
         
         #if loop_length%2==1:
         #    u,_,_=get_transfer_matrix_spectrum_2D(A,loop_length=loop_length-1)
@@ -149,57 +152,62 @@ def show_scaling_dimensions(Ts,loop_length=2,num_scaling_dims=8,volume_scaling=2
     #plt.xlabel('RG Step')
     #plt.ylabel('norm of tensor')
     #plt.show()
-    
-    eigs=np.array(curve['eigs'].tolist()).T
-    for eig in eigs:
-        plt.plot(curve['layer'],eig/eigs[0],'.-',color='black')
-    plt.xlabel('RG Step')
-    plt.ylabel('eigenvalues of normalized transfer matrix')
-    plt.ylim([0,1])
-    plt.show()
-    if filename is not None:
-        plt.savefig(filename+'_eigs.png')
-        print('saved to',filename+'_eigs.png')
-        plt.close()
-    
-    sdsds=np.array(curve['scaling_dimensions'].tolist()).T
-    if reference_scaling_dimensions is not None:
-        for sdsd in reference_scaling_dimensions:
-            plt.plot(curve['layer'],np.ones_like(curve['layer'])*sdsd,'-',color='lightgrey')
-        plt.ylim([0,max(reference_scaling_dimensions)*1.1])
-    else:
-        plt.ylim([np.average(sdsds[-1])*-.1,np.average(sdsds[-1])*1.5])
-
-    for sdsd in sdsds:
-        plt.plot(curve['layer'],sdsd,'.-',color='black')
-    plt.xlabel('RG Step')
-    plt.ylabel('scaling dimensions')
-    plt.show()
-    if filename is not None:
-        plt.savefig(filename+'_scDim.png')
-        print('saved to',filename+'_scDim.png')
-        plt.close()
-    
-    if reference_center_charge is not None:
-        plt.plot(curve['layer'],np.ones_like(curve['layer'])*reference_center_charge,'-',color='lightgrey')
-        plt.ylim([0,reference_center_charge*2])
-    else:
-        plt.ylim([np.average(curve['center_charge'])*-.1,np.average(curve['center_charge'])*1.5])
-    plt.plot(curve['layer'],curve['center_charge'],'.-',color='black')
-    plt.xlabel('RG Step')
-    plt.ylabel('central charge')
-    plt.show()
-    if filename is not None:
-        plt.savefig(filename+'_c.png')
-        print('saved to',filename+'_c.png')
-        plt.close()
-    
-    for item in ['min_entropy','transfer_entropy']:
-        break
-        plt.plot(curve['layer'],curve[item],'.-',color='black')
+    if display or filename is not None:
+        eigs=np.array(curve['eigs'].tolist()).T
+        for eig in eigs:
+            plt.plot(curve['layer'],eig,'.-',color='black')
         plt.xlabel('RG Step')
-        plt.ylabel(item)
+        plt.ylabel('eigenvalues of transfer matrix')
+        plt.ylim([0,1])
         plt.show()
+        if filename is not None:
+            plt.savefig(filename+'_eigs.png')
+            print('saved to',filename+'_eigs.png')
+            plt.close()
+        
+        sdsds=np.array(curve['scaling_dimensions'].tolist()).T
+        if reference_scaling_dimensions is not None:
+            for sdsd in reference_scaling_dimensions:
+                plt.plot(curve['layer'],np.ones_like(curve['layer'])*sdsd,'-',color='lightgrey')
+            plt.ylim([0,max(reference_scaling_dimensions)*1.1])
+        else:
+            plt.ylim([np.average(sdsds[-1])*-.1,np.average(sdsds[-1])*1.5])
+
+        for sdsd in sdsds:
+            plt.plot(curve['layer'],sdsd,'.-',color='black')
+        plt.xlabel('RG Step')
+        plt.ylabel('scaling dimensions')
+        plt.show()
+        if filename is not None:
+            plt.savefig(filename+'_scDim.png')
+            print('saved to',filename+'_scDim.png')
+            plt.close()
+        
+        if reference_center_charge is not None:
+            plt.plot(curve['layer'],np.ones_like(curve['layer'])*reference_center_charge,'-',color='lightgrey')
+            plt.ylim([0,reference_center_charge*2])
+        else:
+            avg=np.average(curve['center_charge'])
+            #nan or inf
+            if np.isnan(avg) or np.isinf(avg):
+                avg=.5
+                 
+            plt.ylim([avg*-.1,avg*1.5])
+        plt.plot(curve['layer'],curve['center_charge'],'.-',color='black')
+        plt.xlabel('RG Step')
+        plt.ylabel('central charge')
+        plt.show()
+        if filename is not None:
+            plt.savefig(filename+'_c.png')
+            print('saved to',filename+'_c.png')
+            plt.close()
+        
+        for item in ['min_entropy','transfer_entropy']:
+            break
+            plt.plot(curve['layer'],curve[item],'.-',color='black')
+            plt.xlabel('RG Step')
+            plt.ylabel(item)
+            plt.show()
     
     return curve
 

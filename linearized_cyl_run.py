@@ -20,7 +20,6 @@ print('loading library...')
 from opt_einsum import contract # idk why but its required to avoid bug in contract with numpy arrays
 import torch
 import numpy as np
-torch.set_default_tensor_type(torch.cuda.DoubleTensor)
 if options['device']=='cpu':
     torch.set_default_tensor_type(torch.DoubleTensor)
 else:  
@@ -73,8 +72,6 @@ print('scaling dimensions from Transfer Matrix on a Cylinder')
 print(get_scaling_dimensions(sc,scaling=np.exp(2*np.pi/4)))
 
 filename=options['filename']
-if filename[-4:]!='.pkl':
-    filename+='.pkl'
 
 torch.save((options,sc,uc),filename)
 print('file saved: ',filename)

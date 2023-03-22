@@ -102,13 +102,14 @@ def fix_phase_2D(T,Tref):
     
     spacial_dim=len(T.shape)//2
     ds=[torch.ones(T.shape[i]) for i in range(spacial_dim*2)]
-    for i in range(1,2*max(T.shape)):
+    for _i in range(1,3*max(T.shape)):
+        i=_i%max(T.shape)
         if len(T.shape)==4:
             TT,TTref=T[:,:i,:i,:i],Tref[:,:i,:i,:i]
         else:
             TT,TTref=T[:,:i,:i,:i,0],Tref[:,:i,:i,:i,0]
         rho1=contract('ijkl,ijkl->i',TT,TTref)
-        di=torch.where(rho1>=0,1.,-1.)
+        di=torch.where(rho1>0,1.,-1.)
         ds[0],ds[1]=ds[0]*di,ds[1]*di
         #T=contract('ijkl,i,j->ijkl',T,di,di)
         T=apply_vector_to_leg(T,di,0)
@@ -119,7 +120,7 @@ def fix_phase_2D(T,Tref):
         else:
             TT,TTref=T[:i,:i,:,:i,0],Tref[:i,:i,:,:i,0]
         rho1=contract('ijkl,ijkl->k',TT,TTref)
-        di=torch.where(rho1>=0,1.,-1.)
+        di=torch.where(rho1>0,1.,-1.)
         ds[2],ds[3]=ds[2]*di,ds[3]*di
         #T=contract('ijkl,k,l->ijkl',T,di,di)
         T=apply_vector_to_leg(T,di,2)

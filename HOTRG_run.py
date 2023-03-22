@@ -61,7 +61,5 @@ layers,Ts,logTotals=HOTRG_layers(T0,
                         return_tensors=True)
 
 filename=options['filename']
-if filename[-4:]!='.pkl':
-    filename+='.pkl'
 torch.save((options,params,layers,Ts,logTotals),filename)
 print('file saved: ',filename)

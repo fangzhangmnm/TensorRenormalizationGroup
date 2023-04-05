@@ -53,7 +53,7 @@ coordsss=[]
 #         coordsss.append(((x0,y0),(x1,y1)))
 
 
-# smearing between edge3
+# smearing between edge3 Not good
 # filename='data/smearing_between_edge_10_3.pkl'
 # lattice_size=(1024,1024)
 # for blockSize in [1,2,4,8,16,32,64,128,256,512]:
@@ -90,59 +90,169 @@ coordsss=[]
 #             continue
 #         coordsss.append(((x0,y0),(x1,y1)))
 
-filename='data/smearing_corner_10.pkl'
-lattice_size=(1024,1024)
-def random_rel_to_corner(lx,ly):
-    diagonal_length=np.sqrt(lx**2+ly**2)
-    r=np.exp(np.random.uniform(np.log(1),np.log(diagonal_length)))
-    theta=np.random.uniform(0,2*np.pi)
-    x,y=int(r*np.cos(theta)),int(r*np.sin(theta))
-    if x<0: x+=lx
-    if y<0: y+=ly
-    # confine them into the bigger block
-    x,y=max(0,min(lx-1,x)),max(0,min(ly-1,y))
-    assert x>=0 and x<lx
-    assert y>=0 and y<ly
-    return x,y
-for l in range(0,20):
-    for i in range(128):
-        lx=2**(l//2) if l%2==0 else 2**(l//2+1)
-        ly=2**(l//2)
-        if l%2==0:
-            lx=2**(l//2)
-            ly=2**(l//2)
-            BX0=np.random.randint(0,(lattice_size[0]//lx)-1)
-            BX1=BX0+1
-            BY0=np.random.randint(0,lattice_size[1]//ly)
-            BY1=BY0
-        else:
-            lx=2**(l//2+1)
-            ly=2**(l//2)
-            BX0=np.random.randint(0,lattice_size[0]//lx)
-            BX1=BX0
-            BY0=np.random.randint(0,(lattice_size[1]//ly)-1)
-            BY1=BY0+1
+# Good
+# filename='data/smearing_corner_10.pkl'
+# lattice_size=(1024,1024)
+# def random_rel_to_corner(lx,ly):
+#     diagonal_length=np.sqrt(lx**2+ly**2)
+#     r=np.exp(np.random.uniform(np.log(1),np.log(diagonal_length)))
+#     theta=np.random.uniform(0,2*np.pi)
+#     x,y=int(r*np.cos(theta)),int(r*np.sin(theta))
+#     if x<0: x+=lx
+#     if y<0: y+=ly
+#     # confine them into the bigger block
+#     x,y=max(0,min(lx-1,x)),max(0,min(ly-1,y))
+#     assert x>=0 and x<lx
+#     assert y>=0 and y<ly
+#     return x,y
+# for l in range(0,20):
+#     for i in range(128):
+#         lx=2**(l//2) if l%2==0 else 2**(l//2+1)
+#         ly=2**(l//2)
+#         if l%2==0:
+#             lx=2**(l//2)
+#             ly=2**(l//2)
+#             BX0=np.random.randint(0,(lattice_size[0]//lx)-1)
+#             BX1=BX0+1
+#             BY0=np.random.randint(0,lattice_size[1]//ly)
+#             BY1=BY0
+#         else:
+#             lx=2**(l//2+1)
+#             ly=2**(l//2)
+#             BX0=np.random.randint(0,lattice_size[0]//lx)
+#             BX1=BX0
+#             BY0=np.random.randint(0,(lattice_size[1]//ly)-1)
+#             BY1=BY0+1
 
-        x0,y0=random_rel_to_corner(lx,ly)
-        x0,y0=BX0*lx+x0,BY0*ly+y0
-        x1,y1=random_rel_to_corner(lx,ly)
-        x1,y1=BX1*lx+x1,BY1*ly+y1
-        #print(lx,ly,BX0,BX1,BY0,BY1,x0,y0,x1,y1)
-        assert x0!=x1 or y0!=y1
-        assert x0>=0 and x0<lattice_size[0]
-        assert x1>=0 and x1<lattice_size[0]
-        assert y0>=0 and y0<lattice_size[1]
-        assert y1>=0 and y1<lattice_size[1]
-        coordsss.append(((x0,y0),(x1,y1)))
+#         x0,y0=random_rel_to_corner(lx,ly)
+#         x0,y0=BX0*lx+x0,BY0*ly+y0
+#         x1,y1=random_rel_to_corner(lx,ly)
+#         x1,y1=BX1*lx+x1,BY1*ly+y1
+#         #print(lx,ly,BX0,BX1,BY0,BY1,x0,y0,x1,y1)
+#         assert x0!=x1 or y0!=y1
+#         assert x0>=0 and x0<lattice_size[0]
+#         assert x1>=0 and x1<lattice_size[0]
+#         assert y0>=0 and y0<lattice_size[1]
+#         assert y1>=0 and y1<lattice_size[1]
+#         coordsss.append(((x0,y0),(x1,y1)))
 
 
 
+# sigma sigma epsilon correlation
+# filename='data/sigma_sigma_epsilon_correlation_points.pkl'
+# lattice_size=(1024,1024)
+# coordsss=[]
+# N=1000
+# while len(coordsss)<N:
+#     # choose a center point randomly in the lattice
+#     # for each point, determine the distance to the center point randomly in geometric distribution
+#     # then determine the angle randomly
+#     # choose r from [1,max_block_size] in geometric distribution
+#     max_block_size=min(lattice_size[0],lattice_size[1])//3
+#     r1=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     r2=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     r3=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     block_size=max(r1,r2,r3)
+#     # choose a center point randomly in the lattice
+#     cx0,cy0=np.random.randint(block_size,lattice_size[0]-block_size),np.random.randint(block_size,lattice_size[1]-block_size)
+
+#     theta1=np.random.uniform(0,2*np.pi)
+#     theta2=np.random.uniform(0,2*np.pi)
+#     theta3=np.random.uniform(0,2*np.pi)
+#     x0,y0=cx0+int(r1*np.cos(theta1)),cy0+int(r1*np.sin(theta1))
+#     x1,y1=cx0+int(r2*np.cos(theta2)),cy0+int(r2*np.sin(theta2))
+#     x2,y2=cx0+int(r3*np.cos(theta3)),cy0+int(r3*np.sin(theta3))
+#     x3,y3=x2+1,y2
+#     # confine them into the lattice
+#     x0,y0=max(0,min(lattice_size[0]-1,x0)),max(0,min(lattice_size[1]-1,y0))
+#     x1,y1=max(0,min(lattice_size[0]-1,x1)),max(0,min(lattice_size[1]-1,y1))
+#     x2,y2=max(0,min(lattice_size[0]-1,x2)),max(0,min(lattice_size[1]-1,y2))
+#     x3,y3=max(0,min(lattice_size[0]-1,x3)),max(0,min(lattice_size[1]-1,y3))
+
+#     # check if they are the same point
+#     if x0==x1 and y0==y1: continue
+#     if x0==x2 and y0==y2: continue
+#     if x0==x3 and y0==y3: continue
+#     if x1==x2 and y1==y2: continue
+#     if x1==x3 and y1==y3: continue
+#     if x2==x3 and y2==y3: continue
+#     # save the data
+#     coordsss.append(((x0,y0),(x1,y1),(x2,y2),(x3,y3)))
+
+
+
+# 4pt correlation
+# filename='data/4pt_correlation_points.pkl'
+# lattice_size=(1024,1024)
+filename='data/4pt_correlation_points_30.pkl'
+lattice_size=(2**30,2**30)
+coordsss=[]
+N=1000
+while len(coordsss)<N:
+    # choose a center point randomly in the lattice
+    # for each point, determine the distance to the center point randomly in geometric distribution
+    # then determine the angle randomly
+    # choose r from [1,max_block_size] in geometric distribution
+    max_block_size=min(lattice_size[0],lattice_size[1])//3
+    r1=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+    r2=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+    r3=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+    r4=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+    block_size=max(r1,r2,r3,r4)
+    # choose a center point randomly in the lattice
+    cx0,cy0=np.random.randint(block_size,lattice_size[0]-block_size),np.random.randint(block_size,lattice_size[1]-block_size)
+
+    theta1=np.random.uniform(0,2*np.pi)
+    theta2=np.random.uniform(0,2*np.pi)
+    theta3=np.random.uniform(0,2*np.pi)
+    theta4=np.random.uniform(0,2*np.pi)
+    x0,y0=cx0+int(r1*np.cos(theta1)),cy0+int(r1*np.sin(theta1))
+    x1,y1=cx0+int(r2*np.cos(theta2)),cy0+int(r2*np.sin(theta2))
+    x2,y2=cx0+int(r3*np.cos(theta3)),cy0+int(r3*np.sin(theta3))
+    x3,y3=cx0+int(r4*np.cos(theta4)),cy0+int(r4*np.sin(theta4))
+    # confine them into the lattice
+    x0,y0=max(0,min(lattice_size[0]-1,x0)),max(0,min(lattice_size[1]-1,y0))
+    x1,y1=max(0,min(lattice_size[0]-1,x1)),max(0,min(lattice_size[1]-1,y1))
+    x2,y2=max(0,min(lattice_size[0]-1,x2)),max(0,min(lattice_size[1]-1,y2))
+    x3,y3=max(0,min(lattice_size[0]-1,x3)),max(0,min(lattice_size[1]-1,y3))
+
+    # check if they are the same point
+    if x0==x1 and y0==y1: continue
+    if x0==x2 and y0==y2: continue
+    if x0==x3 and y0==y3: continue
+    if x1==x2 and y1==y2: continue
+    if x1==x3 and y1==y3: continue
+    if x2==x3 and y2==y3: continue
+    # save the data
+    coordsss.append(((x0,y0),(x1,y1),(x2,y2),(x3,y3)))
+    
+
+# =================================
+# verify and save the data
+
+def dist(coords1,coords2):
+    return ((coords1[0]-coords2[0])**2+(coords1[1]-coords2[1])**2)**0.5
 
 # remove the duplicated ones
 coordsss=list(sorted(set(coordsss)))
 for coordss in coordsss:
     # print coords and distance
-    print(coordss,((coordss[0][0]-coordss[1][0])**2+(coordss[0][1]-coordss[1][1])**2)**0.5)
+    for coords in coordss:
+        print(coords,end=' ')
+    print()
+    for i in range(len(coordss)):
+        for j in range(i+1,len(coordss)):
+            print(dist(coordss[i],coordss[j]),end=' ')
+    print()
+    # check if they are the same point
+    for i in range(len(coordss)):
+        for j in range(i+1,len(coordss)):
+            assert coordss[i]!=coordss[j]
+    # check if they are in the range of the lattice
+    for coords in coordss:
+        assert coords[0]>=0 and coords[0]<lattice_size[0]
+        assert coords[1]>=0 and coords[1]<lattice_size[1]
+
 pickle.dump(coordsss,open(filename,'wb'))
 print('total correlators:',len(coordsss))
 print('saved to',filename)

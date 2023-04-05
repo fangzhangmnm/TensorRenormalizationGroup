@@ -83,3 +83,16 @@ python correlation_run.py --filename data/hotrg_gilt_X24_smearing_between_edge_1
 python correlation_run.py --filename data/hotrg_X24_smearing_corner_10.pkl --points_filename data/smearing_corner_10.pkl --tensors_filename data/hotrg_X24.pth --log2Size 10
 
 python correlation_run.py --filename data/hotrg_gilt_X24_smearing_corner_10.pkl --points_filename data/smearing_corner_10.pkl --tensors_filename data/hotrg_gilt_X24.pth --log2Size 10
+
+python correlation_run.py --filename data/hotrg_gilt_X24_4pt_correlation.pkl --points_filename data/4pt_correlation_points.pkl --tensors_filename data/hotrg_gilt_X24.pth --log2Size 10
+
+python correlation_run.py --filename data/hotrg_gilt_X24_4pt_correlation_30.pkl --points_filename data/4pt_correlation_points_30.pkl --tensors_filename data/hotrg_gilt_X24.pth --log2Size 30
+
+python correlation_run.py --filename data/hotrg_gilt_X24_sigma_sigma_epsilon_correlation.pkl --points_filename data/sigma_sigma_epsilon_correlation_points.pkl --tensors_filename data/hotrg_gilt_X24.pth --log2Size 10
+
+
+
+python find_critical_temp_run.py --filename data/hotrg_gilt_nomcf_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled
+# 0.44068388938903813
+
+python HOTRG_run.py --filename data/hotrg_nomcf_X24.pth --nLayers 60 --max_dim 24 --mcf_enabled  --model Ising2D --params_file data/hotrg_gilt_nomcf_X24_Tc.pth

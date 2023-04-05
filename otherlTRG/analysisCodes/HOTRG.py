@@ -665,10 +665,15 @@ def normFlowHOTRG(relT, allchi, iterN = 12, isDisp = True, isfixGauge = False,
                                   evenTrunc = evenTrunc)
         # calculate difference of adjacent A0
         if return_sing:
+            # if A0cur.shape == A0.shape:
+            #     Adifflist.append((A0cur - A0).norm())
+            # else:
+            #     Adifflist.append(1)
+            # change by Wenhan
             if A0cur.shape == A0.shape:
-                Adifflist.append((A0cur - A0).norm())
+                Adifflist.append((A0cur - A0).norm()/A0.norm())
             else:
-                Adifflist.append(1)
+                Adifflist.append(np.nan)
         # update A0
         A0 = A0cur * 1.0
         # save updated A0 to disk
@@ -694,6 +699,10 @@ def normFlowHOTRG(relT, allchi, iterN = 12, isDisp = True, isfixGauge = False,
         savefileOther = saveData[1] + "/otherTs.pkl"
         with open(savefileOther, "wb") as f:
             pkl.dump([Anorm, isomlist, RABslist, RABshlist], f)
+    
+    # change by Wenhan
+    print('ADiffList:', Adifflist)
+
     return Anorm, singlist, Adifflist
 
 

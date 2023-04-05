@@ -203,9 +203,10 @@ if scheme == "Gilt-HOTRG":
 
 
     plt.figure()
-    plt.plot(Adifflist[14:31], "ko--", alpha = 0.6)
+    start_x = 0 # 14
+    plt.plot(Adifflist[start_x:31], "ko--", alpha = 0.6)
     plt.yscale("log")
-    plt.xticks(np.arange(0,len(Adifflist[14:31]),2), np.arange(14, len(Adifflist[14:31])+14,2))
+    plt.xticks(np.arange(0,len(Adifflist[start_x:31]),2), np.arange(start_x, len(Adifflist[start_x:31])+start_x,2))
     plt.xlabel("RG step $n$")
     plt.ylabel("$\Vert \mathcal{A}^{(n+1)} - \mathcal{A}^{(n)} \Vert$")
     plt.minorticks_off()

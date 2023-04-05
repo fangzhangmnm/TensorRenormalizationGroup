@@ -345,7 +345,12 @@ def forward_observalbe_tensor_moments(T0_moments:'list[torch.Tensor]',layers:'li
 def get_lattice_size(nLayers,spacial_dim):
     return tuple(2**(nLayers//spacial_dim+(1 if i<nLayers%spacial_dim else 0)) for i in range(spacial_dim))
 
+def get_dist_2D(x,y):
+    return (x**2+y**2)**.5
+
 def get_dist_torus_2D(x,y,lattice_size):
+    # modulus but return positive numers
+    x,y=x%lattice_size[0],y%lattice_size[1]
     d1=x**2+y**2
     d2=(lattice_size[0]-x)**2+y**2
     d3=x**2+(lattice_size[1]-y)**2
@@ -473,9 +478,14 @@ def HOTRG_layer(T1,T2,max_dim,dimR=None,options:dict={},Tref=None):
             if options.get('mcf_enabled_unitary',False):
                 Tn,hh1=fix_unitary_gauge(Tn,Tref)
                 hh=[h1@h for h1,h in zip(hh1,hh)]
-        hh=hh[-2:]+hh[:-2]
     else:
-        hh=None
+        # still fix the phase
+        if Tref is not None and Tn.shape==Tref.shape:
+            Tn,hh=fix_phase(Tn,Tref)
+        else:
+            hh=None
+    if hh is not None:
+        hh=hh[-2:]+hh[:-2] # why?
     layer.hh=hh
     if options.get('hotrg_sanity_check'):
         Tn1= forward_layer(T1old,T2old,layer)

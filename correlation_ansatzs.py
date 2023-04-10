@@ -30,6 +30,16 @@ def low_temp_correlation_1(x,A,zeta,delta):  #low temperature
 low_temp_correlation_1.eq='{0:.2e}(1/ζ+1/x)^(2 ∆),ζ={1:.2e},∆={2:.4f}'
 low_temp_correlation_1.p0=(1,100,0.1)
 
+def low_temp_correlation_2(x,A,zeta,delta,B):  #low temperature
+    return A*(zeta**(-1/B)+x**(-1/B))**(2*delta*B)
+low_temp_correlation_2.eq='{0:.2e}(ζ^(-1/B)+x^(-1/B))^(2 ∆ B),ζ={1:.2e},∆={2:.4f},B={3:.1f}'
+low_temp_correlation_2.p0=(1,100,0.1,1)
+
+def low_temp_correlation_3(x,A,zeta,delta):  #low temperature nikko no m
+    return A*(zeta**(-2*delta)+x**(-2*delta))
+low_temp_correlation_3.eq='{0:.2e}(ζ^(-2 ∆)+x^(-2 ∆)),ζ={1:.2e},∆={2:.4f}'
+low_temp_correlation_3.p0=(1,100,0.1)
+
 def low_temp_correlation(x,A,zeta,delta,m0):  #low temperature nikko
     return A*np.exp(-x/zeta)*x**(-2*delta)+m0**2
 low_temp_correlation.eq='{0:.2e}e^(-x/ζ)/x^(2 Δ)+m0^2,ζ={1:.2e},Δ={2:.4f},m0={3:.3f}'

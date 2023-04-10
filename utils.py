@@ -38,13 +38,17 @@ def show_tensor_ikjl(T,max_dim=None):
     
 def show_tensor_ijkl(T,max_dim=None):
     d0,d1,d2,d3=np.minimum(T.shape,max_dim) if max_dim is not None else T.shape
-    plt.imshow(complex_array_to_rgb(contract('ijkl->ijkl',T[:d0,:d1,:d2,:d3]).reshape(d0*d1,d2*d3)))
+    ax = plt.gca()
+    ax.imshow(complex_array_to_rgb(contract('ijkl->ijkl',T[:d0,:d1,:d2,:d3]).reshape(d0*d1,d2*d3)))
     for i in range(d0+1):
-        plt.axhline(i*d1-.5,color='white')
+        ax.axhline(i*d1-.5,color='white')
     for i in range(d2+1):
-        plt.axvline(i*d3-.5,color='white')
-    plt.ylabel('i,j')
-    plt.xlabel('k,l')
+        ax.axvline(i*d3-.5,color='white')
+    ax.set_ylabel('i,j')
+    ax.set_xlabel('k,l')
+    # not showing ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
     
 def show_tensor_ij_k(T,max_dim=None):
     d0,d1,d2=np.minimum(T.shape,max_dim) if max_dim is not None else T.shape

@@ -15,6 +15,8 @@ parser.add_argument('--gilt_nIter', type=int, default=1)
 parser.add_argument('--mcf_enabled', action='store_true')
 parser.add_argument('--mcf_eps', type=float, default=1e-16)
 parser.add_argument('--mcf_max_iter', type=int, default=20)
+parser.add_argument('--mcf_phase_iter1', type=int, default=3)
+parser.add_argument('--mcf_phase_iter2', type=int, default=10)
 parser.add_argument('--svd_method', type=str, default='eigs', choices=['svds','eigs','eigsh','mysvd','myeig_old'])
 parser.add_argument('--svd_max_iter', type=int, default=200)
 parser.add_argument('--svd_tol', type=float, default=1e-7)
@@ -131,8 +133,19 @@ print(get_scaling_dimensions(torch.as_tensor(sr).abs(),scaling=2))
 ur,sr=torch.tensor(ur),torch.tensor(sr)
 
 
+filename_txt=options['filename']
+if '.' in filename_txt[-5:]:
+    filename_txt=filename_txt.split('.')[0]
+filename_txt=filename_txt+'_scdims.txt'
+with open(filename_txt,'w') as f:
+    print(get_scaling_dimensions(torch.as_tensor(sr).abs(),scaling=2).detach().cpu().numpy(),file=f)
+print('file saved: ',filename_txt)
+
+
+
 
 filename=options['filename']
 
 torch.save((options,sr,ur),filename)
 print('file saved: ',filename)
+

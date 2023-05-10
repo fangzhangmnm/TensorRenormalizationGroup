@@ -48,13 +48,15 @@ reference_scaling_dimensions=[0,0.125,1,1.125,2,2.125,3,3.125,4,4.125,5,5.125]
 reference_central_charge=.5
 
 stride=2 if options['is_HOTRG'] else 1
-show_diff(Ts,stride=stride,filename=options['filename'])
-show_effective_rank(Ts,filename=options['filename'])
+diff_curve=show_diff(Ts,stride=stride,filename=options['filename'])
+effective_rank_curve=show_effective_rank(Ts,filename=options['filename'])
 
-show_scaling_dimensions(Ts,
+scaling_dimensions_curve=show_scaling_dimensions(Ts,
                         loop_length=options['loop_length'],
                         num_scaling_dims=options['num_scaling_dims'],
                         is_HOTRG=options['is_HOTRG'],
                         filename=options['filename'],
                         reference_scaling_dimensions=reference_scaling_dimensions,
                         reference_center_charge=reference_central_charge)
+torch.save((diff_curve,effective_rank_curve,scaling_dimensions_curve),options['filename']+'_curves.pth')
+print('saved to',options['filename']+'_curves.pth')

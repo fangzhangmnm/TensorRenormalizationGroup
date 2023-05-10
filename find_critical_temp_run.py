@@ -88,8 +88,11 @@ print('beta_min=',beta_min,'beta_max=',beta_max)
 print('logZ_min=',logZ_min.item(),'logZ_max=',logZ_max.item())
 print('obs_min=',obs_min.item(),'obs_max=',obs_max.item())
 print('searching for critical temperature using bisection method')
+beta_new=(beta_min+beta_max)/2
 while beta_max-beta_min>options['tol']:
     beta_new=(beta_min+beta_max)/2
+    if beta_new==beta_min or beta_new==beta_max:
+        break
     params[param_name]=beta_new
     T_new,logZ_new,obs_new,dNorm_new=eval_model(params)
     print('beta_min=',beta_min,'beta_new=',beta_new,'beta_max=',beta_max,'beta_ref',beta_ref)
@@ -122,7 +125,16 @@ while beta_max-beta_min>options['tol']:
 
 print('critical temperature found: beta=',beta_new,' reference: ',beta_ref)
 
+
+
 filename=options['filename']
+
+import os
+dirname=os.path.dirname(filename)
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
+
+
 torch.save({param_name:beta_new},filename)
 
     

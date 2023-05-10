@@ -1,9 +1,9 @@
 # Ising2D 0.44068679350977147
 
-python find_critical_temp_run.py --filename data/hotrg_gilt_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled --mcf_enabled
+python find_critical_temp_run.py --filename data/hotrg_gilt_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.4406 --param_max 0.4407 --observable_name magnetization --gilt_enabled --mcf_enabled
 # 0.44068381309509275 X24 diff=0.00000298041
 # 0.44068394660949706 X30 diff=0.0000028469
-python find_critical_temp_run.py --filename data/hotrg_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --mcf_enabled
+python find_critical_temp_run.py --filename data/hotrg_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.4406 --param_max 0.4407 --observable_name magnetization --mcf_enabled
 # 0.44069609642028806 X24 diff=0.00000930291
 # 0.44068705558776855 X30 diff=
 
@@ -92,7 +92,20 @@ python correlation_run.py --filename data/hotrg_gilt_X24_sigma_sigma_epsilon_cor
 
 
 
-python find_critical_temp_run.py --filename data/hotrg_gilt_nomcf_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.43 --param_max 0.45 --observable_name magnetization --gilt_enabled
+python find_critical_temp_run.py --filename data/hotrg_gilt_nomcf_X24_Tc.pth --nLayers 60 --max_dim 24 --model Ising2D --param_name beta --param_min 0.4406 --param_max 0.4407 --observable_name magnetization --gilt_enabled
 # 0.44068388938903813
 
 python HOTRG_run.py --filename data/hotrg_nomcf_X24.pth --nLayers 60 --max_dim 24 --mcf_enabled  --model Ising2D --params_file data/hotrg_gilt_nomcf_X24_Tc.pth
+
+
+
+
+
+
+
+
+
+
+
+
+# python HOTRG_run.py --filename data/X16/hotrg_gilt_X16.pth --nLayers 60 --max_dim 16 --gilt_enabled --mcf_enabled --model Ising2D --params_file data/X16/hotrg_gilt_X16_Tc.pth --hotrg_sanity_check

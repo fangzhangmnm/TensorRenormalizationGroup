@@ -701,7 +701,9 @@ def normFlowHOTRG(relT, allchi, iterN = 12, isDisp = True, isfixGauge = False,
             pkl.dump([Anorm, isomlist, RABslist, RABshlist], f)
     
     # change by Wenhan
-    print('ADiffList:', Adifflist)
+    print('ADiff:')
+    for k in range(len(Adifflist)):
+        print(k,',', Adifflist[k])
 
     return Anorm, singlist, Adifflist
 

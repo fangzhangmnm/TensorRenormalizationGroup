@@ -1,13 +1,34 @@
-import torch
 from opt_einsum import contract
+import torch
 #from safe_svd import svd,sqrt # TODO is it necessary???
 from torch.linalg import svd
 from torch import sqrt
 from tqdm.auto import tqdm
+import dataclasses
 from dataclasses import dataclass
+from math import prod
+import numpy as np
 
 
+def dcontract(derivative,eq,*tensors,**kwargs):
+    assert all(tensor is not None for tensor in tensors)
+    assert len(list(tensor for tensor in tensors if id(tensor)==id(derivative)))==1, f'{id(derivative)%3533} {[id(t)%3533 for t in tensors]}'
+    idx = next(i for i, tensor in enumerate(tensors) if id(tensor)==id(derivative))
+    eq_terms=eq.split(',')
+    eq=','.join(eq_terms[:idx]+eq_terms[idx+1:])+'->'+eq_terms[idx]
+    tensors=tensors[:idx]+tensors[idx+1:]
+    return contract(eq,*tensors,**kwargs)
 
+def svd_tensor_to_isometry(M,idx1=(0,),idx2=(1,)):
+    shape1=tuple(M.shape[i] for i in idx1)
+    shape2=tuple(M.shape[i] for i in idx2)
+    M=M.permute(idx1+idx2).reshape(prod(shape1),prod(shape2))
+    u,_,vh=torch.linalg.svd(M,full_matrices=False)
+    uvh=(u@vh).reshape(shape1+shape2).permute(tuple(np.argsort(idx1+idx2)))
+    return uvh
+
+def get_isometry_from_environment(M,idx1=(0,),idx2=(1,)):
+    return svd_tensor_to_isometry(M,idx1,idx2).conj()
 
     
 def contract_all_legs(T1,T2:torch.Tensor)->torch.Tensor:
@@ -40,6 +61,46 @@ class MCF_options:
     eps:float=1e-6
     max_iter:int=50
     enabled_unitary:bool=True
+    phase_iter1:int=3
+    phase_iter2:int=10
+
+def fix_phase_2D(T,Tref,options:MCF_options=MCF_options()):
+    #if Tref[0,0,0,0]<0:Tref=-Tref
+    #if T[0,0,0,0]<0:T=-T
+
+    hs=[torch.eye(T.shape[i]) for i in range(4)]
+    for _j in range(options.phase_iter1):
+        ds=[torch.ones(T.shape[i]) for i in range(4)]
+        for _i in range(1,max(T.shape)):
+            i=_i%max(T.shape)
+            if len(T.shape)==4:
+                TT,TTref=T[:,:i,:i,:i],Tref[:,:i,:i,:i]
+            else:
+                TT,TTref=T[:,:i,:i,:i,0],Tref[:,:i,:i,:i,0]
+            rho1=contract('ijkl,ijkl->i',TT,TTref)
+            di=torch.where(rho1>0,1.,-1.)
+            ds[0],ds[1]=ds[0]*di,ds[1]*di
+            #T=contract('ijkl,i,j->ijkl',T,di,di)
+            T=apply_vector_to_leg(T,di,0)
+            T=apply_vector_to_leg(T,di,1)
+            
+            if len(T.shape)==4:
+                TT,TTref=T[:i,:i,:,:i],Tref[:i,:i,:,:i]
+            else:
+                TT,TTref=T[:i,:i,:,:i,0],Tref[:i,:i,:,:i,0]
+            rho1=contract('ijkl,ijkl->k',TT,TTref)
+            di=torch.where(rho1>0,1.,-1.)
+            ds[2],ds[3]=ds[2]*di,ds[3]*di
+            #T=contract('ijkl,k,l->ijkl',T,di,di)
+            T=apply_vector_to_leg(T,di,2)
+            T=apply_vector_to_leg(T,di,3)
+
+        hs=[torch.diag(di)@h for di,h in zip(ds,hs)]
+        T,hs1=fix_gauge_svd_2D(T,Tref,nIter=options.phase_iter2)
+        hs=[h1@h for h1,h in zip(hs1,hs)]
+
+    return T,hs
+
 
 def minimal_canonical_form(T:torch.Tensor,options:MCF_options=MCF_options())->'tuple[torch.Tensor,list[torch.Tensor]]':
         # The minimal canonical form of a tensor network
@@ -95,37 +156,76 @@ def fix_unitary_gauge(T,Tref,options:MCF_options=MCF_options()):
     
     
 
+def fix_gauge_svd_2D(T,Tref,nIter=10):
+    dim1,dim2=T.shape[0],T.shape[2]
+    h1,h2=torch.eye(dim1),torch.eye(dim2)
+    for i in range(nIter):
+        env_h1=dcontract(h1,'ijkl,IJKL,Ii,Jj,Kk,Ll',T,Tref,h1,h1.conj().clone(),h2,h2.conj().clone())
+        h1=get_isometry_from_environment(env_h1)
+        env_h2=dcontract(h2,'ijkl,IJKL,Ii,Jj,Kk,Ll',T,Tref,h1,h1.conj().clone(),h2,h2.conj().clone())
+        h2=get_isometry_from_environment(env_h2)
+    return contract('ijkl,Ii,Jj,Kk,Ll->IJKL',T,h1,h1.conj(),h2,h2.conj()),[h1,h1.conj(),h2,h2.conj()]
 
-def fix_phase_2D(T,Tref):
-    #if Tref[0,0,0,0]<0:Tref=-Tref
-    #if T[0,0,0,0]<0:T=-T
-    
-    spacial_dim=len(T.shape)//2
-    ds=[torch.ones(T.shape[i]) for i in range(spacial_dim*2)]
-    for _i in range(1,3*max(T.shape)):
-        i=_i%max(T.shape)
-        if len(T.shape)==4:
-            TT,TTref=T[:,:i,:i,:i],Tref[:,:i,:i,:i]
-        else:
-            TT,TTref=T[:,:i,:i,:i,0],Tref[:,:i,:i,:i,0]
-        rho1=contract('ijkl,ijkl->i',TT,TTref)
-        di=torch.where(rho1>0,1.,-1.)
-        ds[0],ds[1]=ds[0]*di,ds[1]*di
-        #T=contract('ijkl,i,j->ijkl',T,di,di)
-        T=apply_vector_to_leg(T,di,0)
-        T=apply_vector_to_leg(T,di,1)
+
+# def fix_phase_2D(T,Tref):
+#     spacial_dim=len(T.shape)//2
+#     ds=[torch.ones(T.shape[i]) for i in range(spacial_dim*2)]
+#     # chose the dimension which having the biggest impact when flipping
+#     for _i in range(3*max(T.shape)):
+#         rho1=contract('ijkl,ijkl->i',T,Tref)-contract('iikl,iikl->i',T,Tref)
+#         rho2=contract('ijkl,ijkl->k',T,Tref)-contract('ijkk,ijkk->k',T,Tref)
+#         argmax1,max1=torch.argmax(rho1),torch.max(-rho1)
+#         argmax2,max2=torch.argmax(rho2),torch.max(-rho2)
+#         argmax,max_,axis=(argmax1,max1,0) if max1>max2 else (argmax2,max2,1)
+
         
-        if len(T.shape)==4:
-            TT,TTref=T[:i,:i,:,:i],Tref[:i,:i,:,:i]
-        else:
-            TT,TTref=T[:i,:i,:,:i,0],Tref[:i,:i,:,:i,0]
-        rho1=contract('ijkl,ijkl->k',TT,TTref)
-        di=torch.where(rho1>0,1.,-1.)
-        ds[2],ds[3]=ds[2]*di,ds[3]*di
-        #T=contract('ijkl,k,l->ijkl',T,di,di)
-        T=apply_vector_to_leg(T,di,2)
-        T=apply_vector_to_leg(T,di,3)
-    return T,[torch.diag(di) for di in ds]
+#         if max_>0:
+#             print('Fliping indice {} at axis {} with value {}'.format(argmax,axis,max_))
+#             di=torch.ones(T.shape[axis]);di[argmax]=-1
+#             ds[axis*2+0]=ds[axis*2+0]*di
+#             ds[axis*2+1]=ds[axis*2+1]*di
+#             T=apply_vector_to_leg(T,di,axis*2+0)
+#             T=apply_vector_to_leg(T,di,axis*2+1)
+#         else:
+#             break
+#     return T,[torch.diag(di) for di in ds]
+
+
+# def fix_phase_2D(T,Tref):
+#     #if Tref[0,0,0,0]<0:Tref=-Tref
+#     #if T[0,0,0,0]<0:T=-T
+    
+#     spacial_dim=len(T.shape)//2
+#     ds=[torch.ones(T.shape[i]) for i in range(spacial_dim*2)]
+#     for _i in range(0,4*max(T.shape)):
+#         i=_i%max(T.shape)
+#         ii=_i//max(T.shape)
+#         if i==0:
+#             continue
+#         # if ii%2==0:
+#         #     TT,TTref=T[:,:,:i,:i,...],Tref[:,:,:i,:i,...]
+#         #     rho1=contract('ijkk,ijKK->i',TT,TTref)-contract('iikk,iiKK->i',TT,TTref)
+#         # else:
+#         TT,TTref=T[:,:,:i,:i,...],Tref[:,:,:i,:i,...]
+#         rho1=contract('ijkl,ijkl->i',TT,TTref)-contract('iikl,iikl->i',TT,TTref)
+#         di=torch.where(rho1>=0,1.,-1.)
+#         ds[0],ds[1]=ds[0]*di,ds[1]*di
+#         #T=contract('ijkl,i,j->ijkl',T,di,di)
+#         T=apply_vector_to_leg(T,di,0)
+#         T=apply_vector_to_leg(T,di,1)
+        
+#         # if ii%2==0:
+#         #     TT,TTref=T[:i,:i,:,:,...],Tref[:i,:i,:,:,...]
+#         #     rho1=contract('iikl,IIkl->k',TT,TTref)-contract('iikk,IIkk->k',TT,TTref)
+#         # else:
+#         TT,TTref=T[:i,:i,:,:,...],Tref[:i,:i,:,:,...]
+#         rho1=contract('ijkl,ijkl->k',TT,TTref)-contract('ijkk,ijkk->k',TT,TTref)
+#         di=torch.where(rho1>=0,1.,-1.)
+#         ds[2],ds[3]=ds[2]*di,ds[3]*di
+#         #T=contract('ijkl,k,l->ijkl',T,di,di)
+#         T=apply_vector_to_leg(T,di,2)
+#         T=apply_vector_to_leg(T,di,3)
+#     return T,[torch.diag(di) for di in ds]
 
 
 def fix_phase(T,Tref):
@@ -135,7 +235,7 @@ def fix_phase(T,Tref):
 def fix_gauge(T,Tref=None,options:MCF_options=MCF_options()):
     T,hh=minimal_canonical_form(T,options=options)
     if Tref is not None and T.shape==Tref.shape:
-        T,hh1=fix_phase(T,Tref)
+        T,hh1=fix_phase(T,Tref,options=options)
         hh=[h1@h for h1,h in zip(hh1,hh)]
     return T,hh
             

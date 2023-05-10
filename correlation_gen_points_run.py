@@ -9,23 +9,34 @@ coordsss=[]
 
 # 2pt_correlation_points
 # filename='data/2pt_correlation_points_10.pkl'
-# fix_x0y0=False
 # log2Size=10
+# fix_x0y0=False
 # data_count=100
-# 
-# lattice_size=(2**log2Size,2**log2Size)
-# for i in range(data_count):
-#     th=np.random.uniform(0,np.pi/2)
-#     r=np.exp(np.random.uniform(np.log(1),np.log(min(lattice_size))))
-#     x,y=int(np.abs(r*np.cos(th))),int(np.abs(r*np.sin(th)))
-#     if x==0 and y==0:
-#         x,y=(1,0) if np.random.uniform()<0.5 else (0,1)
-#     x0,y0=np.random.randint(0,lattice_size[0]-x),np.random.randint(0,lattice_size[1]-y)
-#     if fix_x0y0:
-#         x0,y0=(0,0)
-#     x1,y1=x0+x,y0+y
-#     coordsss.append(((x0,y0),(x1,y1)))
-# coordsss=list(sorted(set(coordsss)))
+# rmin,rmax=1,2**log2Size
+# filename='data/2pt_correlation_points_30.pkl'
+# log2Size=30
+# fix_x0y0=False
+# data_count=100
+# rmin,rmax=1,2**log2Size
+filename='data/2pt_correlation_points_30_appended.pkl'
+log2Size=30
+fix_x0y0=False
+data_count=900
+rmin,rmax=1,2**log2Size
+
+lattice_size=(2**log2Size,2**log2Size)
+for i in range(data_count):
+    th=np.random.uniform(0,np.pi/2)
+    r=np.exp(np.random.uniform(np.log(rmin),np.log(rmax)))
+    x,y=int(np.abs(r*np.cos(th))),int(np.abs(r*np.sin(th)))
+    if x==0 and y==0:
+        x,y=(1,0) if np.random.uniform()<0.5 else (0,1)
+    x0,y0=np.random.randint(0,lattice_size[0]-x),np.random.randint(0,lattice_size[1]-y)
+    if fix_x0y0:
+        x0,y0=(0,0)
+    x1,y1=x0+x,y0+y
+    coordsss.append(((x0,y0),(x1,y1)))
+coordsss=list(sorted(set(coordsss)))
 
 # torus_correlation_points_y
 # filename='data/torus_correlation_points_y_10.pkl'
@@ -181,50 +192,50 @@ coordsss=[]
 
 
 
-# 4pt correlation
-# filename='data/4pt_correlation_points.pkl'
-# lattice_size=(1024,1024)
-filename='data/4pt_correlation_points_30.pkl'
-lattice_size=(2**30,2**30)
-coordsss=[]
-N=1000
-while len(coordsss)<N:
-    # choose a center point randomly in the lattice
-    # for each point, determine the distance to the center point randomly in geometric distribution
-    # then determine the angle randomly
-    # choose r from [1,max_block_size] in geometric distribution
-    max_block_size=min(lattice_size[0],lattice_size[1])//3
-    r1=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
-    r2=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
-    r3=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
-    r4=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
-    block_size=max(r1,r2,r3,r4)
-    # choose a center point randomly in the lattice
-    cx0,cy0=np.random.randint(block_size,lattice_size[0]-block_size),np.random.randint(block_size,lattice_size[1]-block_size)
+# # 4pt correlation
+# # filename='data/4pt_correlation_points.pkl'
+# # lattice_size=(1024,1024)
+# filename='data/4pt_correlation_points_30.pkl'
+# lattice_size=(2**30,2**30)
+# coordsss=[]
+# N=1000
+# while len(coordsss)<N:
+#     # choose a center point randomly in the lattice
+#     # for each point, determine the distance to the center point randomly in geometric distribution
+#     # then determine the angle randomly
+#     # choose r from [1,max_block_size] in geometric distribution
+#     max_block_size=min(lattice_size[0],lattice_size[1])//3
+#     r1=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     r2=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     r3=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     r4=np.exp(np.random.uniform(np.log(2),np.log(max_block_size)))
+#     block_size=max(r1,r2,r3,r4)
+#     # choose a center point randomly in the lattice
+#     cx0,cy0=np.random.randint(block_size,lattice_size[0]-block_size),np.random.randint(block_size,lattice_size[1]-block_size)
 
-    theta1=np.random.uniform(0,2*np.pi)
-    theta2=np.random.uniform(0,2*np.pi)
-    theta3=np.random.uniform(0,2*np.pi)
-    theta4=np.random.uniform(0,2*np.pi)
-    x0,y0=cx0+int(r1*np.cos(theta1)),cy0+int(r1*np.sin(theta1))
-    x1,y1=cx0+int(r2*np.cos(theta2)),cy0+int(r2*np.sin(theta2))
-    x2,y2=cx0+int(r3*np.cos(theta3)),cy0+int(r3*np.sin(theta3))
-    x3,y3=cx0+int(r4*np.cos(theta4)),cy0+int(r4*np.sin(theta4))
-    # confine them into the lattice
-    x0,y0=max(0,min(lattice_size[0]-1,x0)),max(0,min(lattice_size[1]-1,y0))
-    x1,y1=max(0,min(lattice_size[0]-1,x1)),max(0,min(lattice_size[1]-1,y1))
-    x2,y2=max(0,min(lattice_size[0]-1,x2)),max(0,min(lattice_size[1]-1,y2))
-    x3,y3=max(0,min(lattice_size[0]-1,x3)),max(0,min(lattice_size[1]-1,y3))
+#     theta1=np.random.uniform(0,2*np.pi)
+#     theta2=np.random.uniform(0,2*np.pi)
+#     theta3=np.random.uniform(0,2*np.pi)
+#     theta4=np.random.uniform(0,2*np.pi)
+#     x0,y0=cx0+int(r1*np.cos(theta1)),cy0+int(r1*np.sin(theta1))
+#     x1,y1=cx0+int(r2*np.cos(theta2)),cy0+int(r2*np.sin(theta2))
+#     x2,y2=cx0+int(r3*np.cos(theta3)),cy0+int(r3*np.sin(theta3))
+#     x3,y3=cx0+int(r4*np.cos(theta4)),cy0+int(r4*np.sin(theta4))
+#     # confine them into the lattice
+#     x0,y0=max(0,min(lattice_size[0]-1,x0)),max(0,min(lattice_size[1]-1,y0))
+#     x1,y1=max(0,min(lattice_size[0]-1,x1)),max(0,min(lattice_size[1]-1,y1))
+#     x2,y2=max(0,min(lattice_size[0]-1,x2)),max(0,min(lattice_size[1]-1,y2))
+#     x3,y3=max(0,min(lattice_size[0]-1,x3)),max(0,min(lattice_size[1]-1,y3))
 
-    # check if they are the same point
-    if x0==x1 and y0==y1: continue
-    if x0==x2 and y0==y2: continue
-    if x0==x3 and y0==y3: continue
-    if x1==x2 and y1==y2: continue
-    if x1==x3 and y1==y3: continue
-    if x2==x3 and y2==y3: continue
-    # save the data
-    coordsss.append(((x0,y0),(x1,y1),(x2,y2),(x3,y3)))
+#     # check if they are the same point
+#     if x0==x1 and y0==y1: continue
+#     if x0==x2 and y0==y2: continue
+#     if x0==x3 and y0==y3: continue
+#     if x1==x2 and y1==y2: continue
+#     if x1==x3 and y1==y3: continue
+#     if x2==x3 and y2==y3: continue
+#     # save the data
+#     coordsss.append(((x0,y0),(x1,y1),(x2,y2),(x3,y3)))
     
 
 # =================================
